@@ -19,7 +19,7 @@
 # here is just a placeholder, since it defines only the signature of the various
 # functions but it returns always None.
 
-from my_test_group import *
+from backtracking_to_the_future import *
 
 
 class BibliometricEngine(object):
