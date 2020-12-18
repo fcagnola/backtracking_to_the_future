@@ -37,8 +37,28 @@ def process_citations(citations_file_path):
     return g  # i wonder if it would be better to return the adj dictionary or a tuple of (nodes, edges)
 
 
-def do_compute_impact_factor(data, dois, year):
-    pass
+def do_compute_impact_factor(data, dois, year):  # dois is a set, year is 4 digit string 'YYYY'
+
+    # data is in graph format, for this function only node data is required, so store that in a variable
+    nodes = data.nodes(data=True)
+
+    cit_counter = 0  # this will be the dividend
+    pub = 0          # this will be the divisor
+
+    for node in nodes:  # loop through nodes and dois given as parameter
+        for doi in dois:
+
+            # if the node is a citing one, and creation-year is == YEAR and the citing node is in set of dois
+            if node[1] != {} and node[1]['creation'][:4] == year and node[0] == doi: # for efficiency testing, we should try inverting conditions
+                cit_counter += 1  # add one to the dividend
+
+            # if node is citing and year is year-1 or year-2 add 1 to the divisor
+            if len(node[1]) != 0:
+                if node[1]['creation'][:4] == str(int(year)-1) or node[1]['creation'][:4] == str(int(year)-2):
+                    pub += 1
+
+    return round((cit_counter / pub), 2)  # this tries to solve float errors or weird divisions
+
 
 def do_get_co_citations(data, doi1, doi2):
     pass
@@ -60,3 +80,6 @@ def do_search(data, query, field):
 
 def do_filter_by_value(data, query, field):
     pass
+print(do_compute_impact_factor(process_citations('citations_sample.csv'),
+                               {'10.1007/978-3-319-94694-8_26','10.3390/vaccines7040201', '10.3390/vaccines8040600', '10.3414/me14-05-0004'},
+                               '2019'))
