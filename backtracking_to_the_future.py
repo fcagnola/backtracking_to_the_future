@@ -19,10 +19,19 @@
 # which is not compliant at all with the specifications that have been provided at
 # https://comp-think.github.io/2020-2021/slides/14%20-%20Project.html
 
+import csv
 
 def process_citations(citations_file_path):
-    pass
-jjkjhjh
+    data = []
+    with open(citations_file_path, mode='r', encoding='utf-8') as csv_file:    #reading the csv file
+        csv_reader = csv.DictReader(csv_file)
+        for row in csv_reader:
+            data.append(row)          # we'll have a list of dictionaries, each with "citing","cited","creation","timespan" as keys and their own values as values
+    return data
+
+csv_data = process_citations("Citations/citations_sample.csv")
+print(csv_data)
+
 def do_compute_impact_factor(data, dois, year):
     pass
 
