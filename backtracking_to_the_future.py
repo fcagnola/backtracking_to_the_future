@@ -80,6 +80,10 @@ def do_search(data, query, field):
 
 def do_filter_by_value(data, query, field):
     pass
-print(do_compute_impact_factor(process_citations('citations_sample.csv'),
-                               {'10.1007/978-3-319-94694-8_26','10.3390/vaccines7040201', '10.3390/vaccines8040600', '10.3414/me14-05-0004'},
-                               '2019'))
+
+# print(do_compute_impact_factor(process_citations('citations_sample.csv'),
+#                                {'10.1007/s00134-019-05862-0',
+#                                 '10.3390/vaccines7040201',
+#                                 '10.3390/vaccines8040600',
+#                                 '10.3414/me14-05-0004'},
+#                                '2016'))

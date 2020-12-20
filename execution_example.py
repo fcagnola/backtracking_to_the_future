@@ -17,6 +17,6 @@
 from bibengine import BibliometricEngine
 
 # create a new object of the class 'BibliometricEngine' specifying the input CSV files to process
-my_be = BibliometricEngine("citations_sample.csv")
+my_be = BibliometricEngine('citations_sample.csv')
 
-# my_be.<method> ...
+my_be.compute_impact_factor()
