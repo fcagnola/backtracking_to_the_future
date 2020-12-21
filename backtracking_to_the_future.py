@@ -21,10 +21,44 @@
 
 
 def process_citations(citations_file_path):
-    pass
+    #return list that will contain every line as a dictionary
+    matrix = list()
+
+    #opens file
+    with open(citations_file_path, mode='r', encoding='utf-8') as file:
+
+        #turns every line into a dictionary
+        csvFile = csv.DictReader(file)
+
+        #append every line as dictionary to the list of lines
+        for line in csvFile:
+            matrix.append(line)
+
+    return matrix
 
 def do_compute_impact_factor(data, dois, year):
-    pass
+    # variables for counting the number of citations and the number of articles in the previous years
+    num_citations = 0
+    num_published_prec_years = 0
+
+    # turning the year into an integer to substract easily
+    year_int = int(year)
+
+    # iterating over all the data and all the dois
+    for doi in dois:
+        for line in data:
+
+            # checks if the doi has been cited in year 'year'
+            if doi == line['cited'] and year == line['creation'][:4]:
+                num_citations += 1
+
+            # checks if the doi is a citing article and has been published in the previous two years
+            if doi == line['citing'] and (
+                    line['creation'][:4] == str(year_int - 1) or line['creation'][:4] == str(year_int - 2)):
+                num_published_prec_years += 1
+
+    # return IF
+    return num_citations / num_published_prec_years
 
 def do_get_co_citations(data, doi1, doi2):
     pass
