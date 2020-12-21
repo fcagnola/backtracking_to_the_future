@@ -20,20 +20,21 @@
 # https://comp-think.github.io/2020-2021/slides/14%20-%20Project.html
 
 import csv
+import pandas as pd
 
 def process_citations(citations_file_path):
-    data = []
-    with open(citations_file_path, mode='r', encoding='utf-8') as csv_file:    #reading the csv file
-        csv_reader = csv.DictReader(csv_file)
-        for row in csv_reader:
-            data.append(row)          # we'll have a list of dictionaries, each with "citing","cited","creation","timespan" as keys and their own values as values
-    return data
+    data_read = pd.read_csv(citations_file_path)
+    data = pd.DataFrame(data_read)
+    return data.to_string() #t returns the entire DataFrame( the bi-dimensional data structure of Pandas library)
 
-csv_data = process_citations("Citations/citations_sample.csv")
-print(csv_data)
+citations_file_path = "Citations/citations_sample.csv"
+print(process_citations(citations_file_path))
 
 def do_compute_impact_factor(data, dois, year):
     pass
+
+dois = {"10.1007/978-3-030-49672-2_1", "10.1590/0102-311x00195519", "10.4018/978-1-7998-1534-1.ch015","10.1016/s0140-6736(97)11096-0"}
+data = process_citations(citations_file_path)
 
 def do_get_co_citations(data, doi1, doi2):
     pass
