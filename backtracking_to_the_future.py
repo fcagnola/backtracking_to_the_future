@@ -23,8 +23,7 @@ import csv
 import pandas as pd
 
 def process_citations(citations_file_path):
-    data_read = pd.read_csv(citations_file_path)
-    data = pd.DataFrame(data_read)
+    data = pd.read_csv(citations_file_path)
     return data.to_string() #t returns the entire DataFrame( the bi-dimensional data structure of Pandas library)
 
 citations_file_path = "Citations/citations_sample.csv"
