@@ -20,8 +20,23 @@
 # https://comp-think.github.io/2020-2021/slides/14%20-%20Project.html
 
 
+import csv
+import pprint
+
 def process_citations(citations_file_path):
-    pass
+    result = []
+    with open(citations_file_path, newline="") as filecsv:
+        reader = csv.reader(filecsv, delimiter=",")
+        next(reader)
+        for row in reader:
+            result.append(row)
+
+    return result
+
+
+data = process_citations(r"./citations.csv")
+pprint.pprint(data)
+
 
 def do_compute_impact_factor(data, dois, year):
     pass
