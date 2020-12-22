@@ -21,7 +21,6 @@
 
 import csv
 from networkx import DiGraph
-import pandas
 
 
 def process_citations(citations_file_path):
@@ -41,16 +40,11 @@ def process_citations(citations_file_path):
     return g  # might be better to return adjacency dict (.adj) or a tuple of (nodes, edges)
 
 
-# def process_citations_pandas(citations_file_path):
-#     data_frame = pandas.read_csv(citations_file_path, dtype=str)
-#     return data_frame
-
-
 def do_compute_impact_factor(data, dois, year):  # DOIs is a set, year is 4 digit string 'YYYY'
     # data is in DiGraph format
 
     cit_counter = 0  # this will be the dividend
-    pub = 0          # this will be the divisor
+    pub = set()          # this will be the divisor
 
     for doi in dois:
         citing = data.predecessors(doi)  # this is the network of articles citing a given DOI
@@ -60,11 +54,10 @@ def do_compute_impact_factor(data, dois, year):  # DOIs is a set, year is 4 digi
 
         try:   # python raises a KeyError when node doesn't have a creation date, handle it with exception
             if data.nodes[doi]['creation'][:4] == str(int(year)-1) or data.nodes[doi]['creation'][:4] == str(int(year)-2):
-                pub += 1          # keeps count of the DOIs published in y-1 and y-2
+                pub.add(doi)          # keeps count of the DOIs published in y-1 and y-2
         except KeyError:
             pass
-    # print('dividing {} by {}'.format(cit_counter, pub)) # DEBUG
-    return round((cit_counter / pub), 2)  # try to solve float errors or weird divisions
+    return 'num {}, denom {}, if {}'.format(cit_counter, len(pub), round((cit_counter / len(pub)), 2))  # try to solve float errors or weird divisions
 
 
 def do_get_co_citations(data, doi1, doi2):
