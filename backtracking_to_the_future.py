@@ -57,7 +57,8 @@ def do_compute_impact_factor(data, dois, year):  # DOIs is a set, year is 4 digi
                 pub.add(doi)          # keeps count of the DOIs published in y-1 and y-2
         except KeyError:
             pass
-    return 'num {}, denom {}, if {}'.format(cit_counter, len(pub), round((cit_counter / len(pub)), 2))  # try to solve float errors or weird divisions
+
+    return round((cit_counter / len(pub)), 2)
 
 
 def do_get_co_citations(data, doi1, doi2):
@@ -66,10 +67,10 @@ def do_get_co_citations(data, doi1, doi2):
 def do_get_bibliographic_coupling(data, doi1, doi2):
     pass
 
-def do_get_citation_network(data, start, end):
+def do_get_citation_network(data, start, end):  # F
     pass
 
-def do_merge_graphs(data, g1, g2):
+def do_merge_graphs(data, g1, g2):              # F
     pass
 
 def do_search_by_prefix(data, prefix, is_citing):
