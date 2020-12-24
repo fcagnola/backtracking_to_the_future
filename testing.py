@@ -11,6 +11,9 @@ def process_citations_pandas(citations_file_path):
     data_frame = pandas.read_csv(citations_file_path)
     return data_frame
 
+c = process_citations_pandas(f)
+#print(c.head())
+
 
 def do_compute_impact_factor(data, dois, year):  # dois is a set, year is 4 digit string 'YYYY'
 
