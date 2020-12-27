@@ -76,3 +76,47 @@ print(do_compute_impact_factor(process_citations_pandas(f),
                                 '10.1016/s0140-6736(97)11096-0'},
                                 2016))
 
+#####################################################################################
+#                               digraph version                                     #
+
+
+import csv
+from networkx import DiGraph
+
+
+def process_citations(citations_file_path):
+    g = DiGraph()  # creates directed graph
+
+    with open(citations_file_path, mode="r") as csv_file:  # opens csv in read-mode
+        reader = csv.DictReader(csv_file)
+
+        for row in reader:    # loop through rows, each row representing a citation
+
+            g.add_node(row['citing'], creation=row['creation'])  # creates citing node w/ attribute 'creation'
+
+            g.add_node(row['cited'])                             # creates cited node
+
+            g.add_edge(row['citing'], row['cited'], timespan=row['timespan'])  # creates edge w/ attribute 'timespan'
+
+    return g  # might be better to return adjacency dict (.adj) or a tuple of (nodes, edges)
+
+
+def do_compute_impact_factor(data, dois, year):  # DOIs is a set, year is 4 digit string 'YYYY'
+    # data is in DiGraph format
+
+    cit_counter = 0  # this will be the dividend
+    pub = set()          # this will be the divisor
+
+    for doi in dois:
+        citing = data.predecessors(doi)  # this is the network of articles citing a given DOI
+        for identifier in list(citing):
+            if str(data.nodes[identifier]['creation'][:4]) == year:
+                cit_counter += 1  # keeps count of citations in given year
+
+        try:   # python raises a KeyError when node doesn't have a creation date, handle it with exception
+            if data.nodes[doi]['creation'][:4] == str(int(year)-1) or data.nodes[doi]['creation'][:4] == str(int(year)-2):
+                pub.add(doi)          # keeps count of the DOIs published in y-1 and y-2
+        except KeyError:
+            pass
+
+    return round((cit_counter / len(pub)), 2)
