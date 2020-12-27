@@ -19,46 +19,50 @@
 # which is not compliant at all with the specifications that have been provided at
 # https://comp-think.github.io/2020-2021/slides/14%20-%20Project.html
 
-import csv
-from networkx import DiGraph
+import pandas
+pandas.set_option('display.max_columns', 5)
+pandas.set_option('display.width', 800)
 
 
-def process_citations(citations_file_path):
-    g = DiGraph()  # creates directed graph
-
-    with open(citations_file_path, mode="r") as csv_file:  # opens csv in read-mode
-        reader = csv.DictReader(csv_file)
-
-        for row in reader:    # loop through rows, each row representing a citation
-
-            g.add_node(row['citing'], creation=row['creation'])  # creates citing node w/ attribute 'creation'
-
-            g.add_node(row['cited'])                             # creates cited node
-
-            g.add_edge(row['citing'], row['cited'], timespan=row['timespan'])  # creates edge w/ attribute 'timespan'
-
-    return g  # might be better to return adjacency dict (.adj) or a tuple of (nodes, edges)
+def process_citations_pandas(citations_file_path):
+    data_frame = pandas.read_csv(citations_file_path)
+    return data_frame
 
 
 def do_compute_impact_factor(data, dois, year):  # DOIs is a set, year is 4 digit string 'YYYY'
-    # data is in DiGraph format
+    cit_counter = 0  # value will be dividend
+    pub = set()  # len will be divisor
 
-    cit_counter = 0  # this will be the dividend
-    pub = set()          # this will be the divisor
+    for doi in dois:  # loop through input DOIs
 
-    for doi in dois:
-        citing = data.predecessors(doi)  # this is the network of articles citing a given DOI
-        for identifier in list(citing):
-            if str(data.nodes[identifier]['creation'][:4]) == year:
-                cit_counter += 1  # keeps count of citations in given year
-
-        try:   # python raises a KeyError when node doesn't have a creation date, handle it with exception
-            if data.nodes[doi]['creation'][:4] == str(int(year)-1) or data.nodes[doi]['creation'][:4] == str(int(year)-2):
-                pub.add(doi)          # keeps count of the DOIs published in y-1 and y-2
+        data.set_index('cited', inplace=True)  # index dataframe by 'cited' column
+        try:
+            created = data.loc[doi, 'creation']  # lookup all mentions of the DOI in the input set, column 'creation'
+            for i in created:
+                if i[:4] == year:
+                    cit_counter += 1
         except KeyError:
             pass
+        data.reset_index(inplace=True)  # reset original integer index
 
-    return round((cit_counter / len(pub)), 2)
+        data.set_index('citing', inplace=True)  # index dataframe by 'citing' column
+        try:
+            creation = data.loc[doi, 'creation'][
+                0]  # select creation year of the first match (all rows will be identical)
+
+            if len(creation) == 1:  # if there was a single row creation contains only '2', the first elem of year
+                creation = data.loc[doi, 'creation'][:4]  # correct problem of the line before
+
+            if creation == str(int(year) - 1) or creation == str(int(year) - 2):
+                pub.add(doi)
+        except KeyError:
+            pass
+        data.reset_index(inplace=True)  # reset original integer index
+    try:
+        return round(cit_counter / len(pub), 2)
+    except ZeroDivisionError:
+        return "Could not compute impact factor: no DOIs pointed to objects published in \n" \
+               "year-1 or year-2. Please try with another input set or year."
 
 
 def do_get_co_citations(data, doi1, doi2):
