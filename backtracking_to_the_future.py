@@ -20,11 +20,12 @@
 # https://comp-think.github.io/2020-2021/slides/14%20-%20Project.html
 
 import pandas
+
 pandas.set_option('display.max_columns', 5)
 pandas.set_option('display.width', 800)
 
 
-def process_citations_pandas(citations_file_path):
+def process_citations(citations_file_path):
     data_frame = pandas.read_csv(citations_file_path)
     return data_frame
 
@@ -68,31 +69,38 @@ def do_compute_impact_factor(data, dois, year):  # DOIs is a set, year is 4 digi
 def do_get_co_citations(data, doi1, doi2):
     pass
 
+
 def do_get_bibliographic_coupling(data, doi1, doi2):
     pass
+
 
 def do_get_citation_network(data, start, end):  # F
     pass
 
-def do_merge_graphs(data, g1, g2):              # F
+
+def do_merge_graphs(data, g1, g2):  # F
     pass
+
 
 def do_search_by_prefix(data, prefix, is_citing):
     pass
 
+
 def do_search(data, query, field):
     pass
+
 
 def do_filter_by_value(data, query, field):
     pass
 
-# print(do_compute_impact_factor(process_citations('citations_sample.csv'),
-#                                {'10.3389/fpsyg.2016.01483',
-#                                 '10.1097/mop.0000000000000929',
-#                                 '10.1177/000313481107700711',
-#                                 '10.3414/me14-05-0004',
-#                                 '10.3928/01477447-20180123-06',
-#                                 '10.1002/ddr.21369',
-#                                 '10.3889/mmej.2015.50002',
-#                                 '10.1016/s0140-6736(97)11096-0'},
-#                                '2016'))
+
+print(do_compute_impact_factor(process_citations('citations_sample.csv'),
+                               {'10.3389/fpsyg.2016.01483',  # created 2016 N
+                                '10.1097/mop.0000000000000929',  # created 2020 N
+                                '10.1177/000313481107700711',  # created 2011 N
+                                '10.3414/me14-05-0004',  # created 2014 Yes
+                                '10.3928/01477447-20180123-06',  # created 2018 N
+                                '10.1002/ddr.21369',  # created 2016 N
+                                '10.3889/mmej.2015.50002',  # created 2015 Yes
+                                '10.1016/s0140-6736(97)11096-0'},  # no creation
+                               '2016'))
