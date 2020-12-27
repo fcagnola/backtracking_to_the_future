@@ -1,4 +1,5 @@
-# PANDAS version
+############################################################################################
+#                                   PANDAS version                                         #
 import pandas
 
 pandas.set_option('display.max_columns', 5)
