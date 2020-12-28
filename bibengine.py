@@ -23,7 +23,7 @@ from backtracking_to_the_future import *
 
 
 class BibliometricEngine(object):
-    def __init__(self, metadata_file_path):
+    def __init__(self, citations_file_path):
         self.data = process_citations(citations_file_path)
 
     def compute_impact_factor(self, dois, year):
