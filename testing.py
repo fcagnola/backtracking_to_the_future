@@ -54,29 +54,30 @@ def do_compute_impact_factor(data, dois, year):  # dois is a set, year is 4 digi
                "year-1 or year-2. Please try with another input set or year."
 
 
+# FOR TESTING PANDAS VERSION UNCOMMENT THE FOLLOWING LINES
 
-print(do_compute_impact_factor(process_citations_pandas(f),
-                               {'10.3389/fpsyg.2016.01483',     # created 2016 N
-                                '10.1097/mop.0000000000000929', # created 2020 N
-                                '10.1177/000313481107700711',   # created 2011 N
-                                '10.3414/me14-05-0004',         # created 2014 Y
-                                '10.3928/01477447-20180123-06', # created 2018 N
-                                '10.1002/ddr.21369',            # created 2016 N
-                                '10.3889/mmej.2015.50002',      # created 2015 Y
-                                '10.1016/s0140-6736(97)11096-0'}, # no creation
-                               '2016'))
-print(do_compute_impact_factor(process_citations_pandas(f),
-                               set(), '2016'))
-print(do_compute_impact_factor(process_citations_pandas(f),
-                                {'10.3389/fpsyg.2016.01483',     # created 2016 N
-                                '10.1097/mop.0000000000000929', # created 2020 N
-                                '10.1177/000313481107700711',   # created 2011 N
-                                '10.3414/me14-05-0004',         # created 2014 Y
-                                '10.3928/01477447-20180123-06', # created 2018 N
-                                '10.1002/ddr.21369',            # created 2016 N
-                                '10.3889/mmej.2015.50002',      # created 2015 Y
-                                '10.1016/s0140-6736(97)11096-0'},
-                                2016))
+# print(do_compute_impact_factor(process_citations_pandas(f),
+#                                {'10.3389/fpsyg.2016.01483',     # created 2016 N
+#                                 '10.1097/mop.0000000000000929', # created 2020 N
+#                                 '10.1177/000313481107700711',   # created 2011 N
+#                                 '10.3414/me14-05-0004',         # created 2014 Y
+#                                 '10.3928/01477447-20180123-06', # created 2018 N
+#                                 '10.1002/ddr.21369',            # created 2016 N
+#                                 '10.3889/mmej.2015.50002',      # created 2015 Y
+#                                 '10.1016/s0140-6736(97)11096-0'}, # no creation
+#                                '2016'))
+# print(do_compute_impact_factor(process_citations_pandas(f),
+#                                set(), '2016'))
+# print(do_compute_impact_factor(process_citations_pandas(f),
+#                                 {'10.3389/fpsyg.2016.01483',     # created 2016 N
+#                                 '10.1097/mop.0000000000000929', # created 2020 N
+#                                 '10.1177/000313481107700711',   # created 2011 N
+#                                 '10.3414/me14-05-0004',         # created 2014 Y
+#                                 '10.3928/01477447-20180123-06', # created 2018 N
+#                                 '10.1002/ddr.21369',            # created 2016 N
+#                                 '10.3889/mmej.2015.50002',      # created 2015 Y
+#                                 '10.1016/s0140-6736(97)11096-0'},
+#                                 2016))
 
 #####################################################################################
 #                               digraph version                                     #
@@ -86,7 +87,7 @@ import csv
 from networkx import DiGraph
 
 
-def process_citations(citations_file_path):
+def process_citations_nx(citations_file_path):
     g = DiGraph()  # creates directed graph
 
     with open(citations_file_path, mode="r") as csv_file:  # opens csv in read-mode
@@ -103,7 +104,7 @@ def process_citations(citations_file_path):
     return g  # might be better to return adjacency dict (.adj) or a tuple of (nodes, edges)
 
 
-def do_compute_impact_factor(data, dois, year):  # DOIs is a set, year is 4 digit string 'YYYY'
+def do_compute_impact_factor_nx(data, dois, year):  # DOIs is a set, year is 4 digit string 'YYYY'
     # data is in DiGraph format
 
     cit_counter = 0  # this will be the dividend
