@@ -1,6 +1,3 @@
-from test_efficiency import *
-
-#setup =
 import csv
 import pandas as pd
 
@@ -39,7 +36,7 @@ def do_compute_impact_factor(data, dois, year):
     #variables for counting the number of citations and the number of articles in the previous years
     num_citations = 0
     num_published_prec_years = 0
-
+    
     #turning the year into an integer to substract easily
     year_int = int(year)
 
@@ -58,7 +55,6 @@ def do_compute_impact_factor(data, dois, year):
     #return IF
     return num_citations/num_published_prec_years
 
-
 citations = process_citations_base("citations_sample.csv")
 # print(citations)
 # print(test_do_compute_impact_factor(citations, set(['10.1016/s0140-6736(97)11096-0','10.1001/archpediatrics.2009.42','10.1097/mop.0000000000000929']),'2020', 59))
@@ -67,7 +63,7 @@ citations = process_citations_base("citations_sample.csv")
 def process_citations_pandas(citations_file_path):
     return pd.read_csv(citations_file_path, encoding='utf-8')
 
-citations = process_citations_pandas('citations_sample.csv')
+citations_pandas = process_citations_pandas('citations_sample.csv')
 #print(citations)
 
 # Very useful to see the infos about the table: especially for the efficiency -> memory usage
@@ -76,7 +72,7 @@ citations = process_citations_pandas('citations_sample.csv')
 def do_compute_impact_factor_pandas(data, dois, year):
     num = 0
     denom = 0
-
+    
     # selecting only rows with year 'year'
     data_year = data.loc[data['creation'].str.contains(year)]
 
@@ -94,9 +90,5 @@ def do_compute_impact_factor_pandas(data, dois, year):
 
     return round(num/denom, 2)
 
-print(do_compute_impact_factor_pandas(citations, {'10.3389/fpsyg.2016.01483','10.1097/mop.0000000000000929','10.1177/000313481107700711','10.3414/me14-05-0004','10.3928/01477447-20180123-06','10.1002/ddr.21369','10.3889/mmej.2015.50002','10.1016/s0140-6736(97)11096-0'}, '2016'))
+print(do_compute_impact_factor_pandas(citations_pandas, {'10.3389/fpsyg.2016.01483','10.1097/mop.0000000000000929','10.1177/000313481107700711','10.3414/me14-05-0004','10.3928/01477447-20180123-06','10.1002/ddr.21369','10.3889/mmej.2015.50002','10.1016/s0140-6736(97)11096-0'}, '2016'))
 
-# l_statements = ['''do_compute_impact_factor(citations, {'10.3389/fpsyg.2016.01483','10.1097/mop.0000000000000929','10.1177/000313481107700711','10.3414/me14-05-0004','10.3928/01477447-20180123-06','10.1002/ddr.21369','10.3889/mmej.2015.50002','10.1016/s0140-6736(97)11096-0'}, '2016')''', '''do_compute_impact_factor_pandas(citations, {'10.3389/fpsyg.2016.01483','10.1097/mop.0000000000000929','10.1177/000313481107700711','10.3414/me14-05-0004','10.3928/01477447-20180123-06','10.1002/ddr.21369','10.3889/mmej.2015.50002','10.1016/s0140-6736(97)11096-0'}, '2016')''']
-# l_functions = ['do_compute_impact_factor()', 'do_compute_impact_factor_pandas()']
-#
-# print(multipleniceevaluator(l_functions, setup, l_statements))
