@@ -20,55 +20,54 @@
 # https://comp-think.github.io/2020-2021/slides/14%20-%20Project.html
 
 import pandas
+from networkx import DiGraph
+import numpy as np
 
 pandas.set_option('display.max_columns', 5)
 pandas.set_option('display.width', 800)
 
 
 def process_citations(citations_file_path):
-    data_frame = pandas.read_csv(citations_file_path)
+    data_frame = pandas.read_csv(citations_file_path, dtype={'citing': str, 'cited': str, 'timespan': str},
+                                 parse_dates=['creation'])
     return data_frame
 
 
 def do_compute_impact_factor(data, dois, year):  # DOIs is a set, year is 4 digit string 'YYYY'
+    num = 0
+    denom = 0
 
-    if len(dois) == 0:
-        return 'Please insert a valid set of DOIs'
-    if type(year) == int:
-        return 'Please provide a year in string format: "YYYY"'
-    cit_counter = 0                             # value will be dividend
-    pub = set()                                 # len will be divisor
+    # selecting only rows with year 'year'
+    data_year = data.loc[data['creation'].dt.year == int(year)]
 
-    for doi in dois:                            # loop through input DOIs
+    # selecting only rows with previous two years
+    data_previous_two_years = data.loc[data['creation'].dt.year == (int(year) - 1) | (int(year) - 2)] #NOT WORKING, TO BE RETESTED
 
-        data.set_index('cited', inplace=True)   # index dataframe by 'cited' column
-        try:
-            created = data.loc[doi, 'creation'] # lookup all mentions of the DOI in the input set, column 'creation'
-            for i in created:
-                if i[:4] == year:
-                    cit_counter += 1
-        except KeyError:
-            pass
-        data.reset_index(inplace=True)          # reset original integer index
+    for doi in dois:
+        # selecting rows with doi == cited and adding the length of this table to num
+        data_year_cited = data_year.loc[data_year['cited'] == doi]
+        num += len(data_year_cited)
 
-        data.set_index('citing', inplace=True)  # index dataframe by 'citing' column
+        # selecting rows with doi == citing and adding the length of this table to denom
+        data_previous_years_citing = data_previous_two_years.loc[data_previous_two_years['citing'] == doi]
+        denom += len(data_previous_years_citing)
 
-        try:
-            creation = data.loc[doi, 'creation'][0] # select creation year of the first match (all rows will be identical)
+    return round(num / denom, 2)
 
-            if len(creation) == 1:  # if result was a single row, creation contains only '2', the first char of 'YYYY'
-                creation = data.loc[doi, 'creation'][:4]                      # correct problem of the line before
 
-            if creation == str(int(year)-1) or creation == str(int(year)-2):
-                pub.add(doi)
-        except KeyError:
-            pass
-        data.reset_index(inplace=True)          # reset original integer index
-    try:
-        return round(cit_counter/len(pub), 2)
-    except ZeroDivisionError:
-        return "Could not compute impact factor: no DOIs pointed to objects published in \n" \
-               "year-1 or year-2. Please try with another input set or year."
+print(do_compute_impact_factor(process_citations('citations_sample.csv'), {'10.3389/fpsyg.2016.01483',  # created 2016 N
+                                                                           '10.1097/mop.0000000000000929',
+                                                                           # created 2020 N
+                                                                           '10.1177/000313481107700711',
+                                                                           # created 2011 N
+                                                                           '10.3414/me14-05-0004',  # created 2014 Y
+                                                                           '10.3928/01477447-20180123-06',
+                                                                           # created 2018 N
+                                                                           '10.1002/ddr.21369',  # created 2016 N
+                                                                           '10.3889/mmej.2015.50002',  # created 2015 Y
+                                                                           '10.1016/s0140-6736(97)11096-0'},
+                               # no creation
+                               '2016'))
 
 
 def do_get_co_citations(data, doi1, doi2):
@@ -80,7 +79,27 @@ def do_get_bibliographic_coupling(data, doi1, doi2):
 
 
 def do_get_citation_network(data, start, end):  # F
-    pass
+
+    # input validation
+    if int(end) < int(start):
+        return "Invalid input: enter an end year greater than the start"
+
+    # filter data on given time window start->end
+    i = int(start)  # iterator, set as ==start, then 1 is added each iter until 'end' is reached
+    ls_dfs = []  # list will contain dataframes for years in time window
+    while i != (int(end) + 1):
+        ls_dfs.append(data[data['creation'].dt.year == i])  # returns 436 instead of 442 rows
+        i += 1
+    dataset = pandas.concat(ls_dfs)  # the dataframe to convert to graph
+    # ALL DOIs in the second column MUST also be in the first, otherwise remove that row.
+
+    # create network (use developed function)
+    graph = DiGraph()
+
+
+print(do_get_citation_network(
+    process_citations('/Users/federicocagnola/PycharmProjects/backtracking_to_the_future/citations_sample.csv'), 2018,
+    2020))
 
 
 def do_merge_graphs(data, g1, g2):  # F
@@ -97,15 +116,3 @@ def do_search(data, query, field):
 
 def do_filter_by_value(data, query, field):
     pass
-
-
-print(do_compute_impact_factor(process_citations('citations_sample.csv'),
-                               {'10.3389/fpsyg.2016.01483',  # created 2016 N
-                                '10.1097/mop.0000000000000929',  # created 2020 N
-                                '10.1177/000313481107700711',  # created 2011 N
-                                '10.3414/me14-05-0004',  # created 2014 Yes
-                                '10.3928/01477447-20180123-06',  # created 2018 N
-                                '10.1002/ddr.21369',  # created 2016 N
-                                '10.3889/mmej.2015.50002',  # created 2015 Yes
-                                '10.1016/s0140-6736(97)11096-0'},  # no creation
-                               '2016'))
