@@ -19,8 +19,8 @@ def do_compute_impact_factor(data, dois, year):  # dois is a set, year is 4 digi
         return 'Please insert a valid set of DOIs'
     if type(year) == int:
         return 'Please provide a year in string format: "YYYY"'
-    cit_counter = 0  # value will be dividend
-    pub = set()  # len will be divisor
+    cit_counter = 0                             # value will be dividend
+    pub = set()                                 # len will be divisor
 
     for doi in dois:                            # loop through input DOIs
 
@@ -35,11 +35,12 @@ def do_compute_impact_factor(data, dois, year):  # dois is a set, year is 4 digi
         data.reset_index(inplace=True)          # reset original integer index
 
         data.set_index('citing', inplace=True)  # index dataframe by 'citing' column
+
         try:
             creation = data.loc[doi, 'creation'][0] # select creation year of the first match (all rows will be identical)
 
-            if len(creation) == 1:  # if there was a single row creation contains only '2', the first elem of year
-                creation = data.loc[doi, 'creation'][:4] # correct problem of the line before
+            if len(creation) == 1:  # if result was a single row, creation contains only '2', the first char of 'YYYY'
+                creation = data.loc[doi, 'creation'][:4]                      # correct problem of the line before
 
             if creation == str(int(year)-1) or creation == str(int(year)-2):
                 pub.add(doi)

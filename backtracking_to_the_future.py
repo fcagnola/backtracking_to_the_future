@@ -31,36 +31,41 @@ def process_citations(citations_file_path):
 
 
 def do_compute_impact_factor(data, dois, year):  # DOIs is a set, year is 4 digit string 'YYYY'
-    cit_counter = 0  # value will be dividend
-    pub = set()  # len will be divisor
 
-    for doi in dois:  # loop through input DOIs
+    if len(dois) == 0:
+        return 'Please insert a valid set of DOIs'
+    if type(year) == int:
+        return 'Please provide a year in string format: "YYYY"'
+    cit_counter = 0                             # value will be dividend
+    pub = set()                                 # len will be divisor
 
-        data.set_index('cited', inplace=True)  # index dataframe by 'cited' column
+    for doi in dois:                            # loop through input DOIs
+
+        data.set_index('cited', inplace=True)   # index dataframe by 'cited' column
         try:
-            created = data.loc[doi, 'creation']  # lookup all mentions of the DOI in the input set, column 'creation'
+            created = data.loc[doi, 'creation'] # lookup all mentions of the DOI in the input set, column 'creation'
             for i in created:
                 if i[:4] == year:
                     cit_counter += 1
         except KeyError:
             pass
-        data.reset_index(inplace=True)  # reset original integer index
+        data.reset_index(inplace=True)          # reset original integer index
 
         data.set_index('citing', inplace=True)  # index dataframe by 'citing' column
+
         try:
-            creation = data.loc[doi, 'creation'][
-                0]  # select creation year of the first match (all rows will be identical)
+            creation = data.loc[doi, 'creation'][0] # select creation year of the first match (all rows will be identical)
 
-            if len(creation) == 1:  # if there was a single row creation contains only '2', the first elem of year
-                creation = data.loc[doi, 'creation'][:4]  # correct problem of the line before
+            if len(creation) == 1:  # if result was a single row, creation contains only '2', the first char of 'YYYY'
+                creation = data.loc[doi, 'creation'][:4]                      # correct problem of the line before
 
-            if creation == str(int(year) - 1) or creation == str(int(year) - 2):
+            if creation == str(int(year)-1) or creation == str(int(year)-2):
                 pub.add(doi)
         except KeyError:
             pass
-        data.reset_index(inplace=True)  # reset original integer index
+        data.reset_index(inplace=True)          # reset original integer index
     try:
-        return round(cit_counter / len(pub), 2)
+        return round(cit_counter/len(pub), 2)
     except ZeroDivisionError:
         return "Could not compute impact factor: no DOIs pointed to objects published in \n" \
                "year-1 or year-2. Please try with another input set or year."
