@@ -1,6 +1,13 @@
-import csv
+from test_efficiency import *
 
-def process_citations(citations_file_path):
+#setup =
+import csv
+import pandas as pd
+
+
+
+#my code before pandas
+def process_citations_base(citations_file_path):
     # dict_cit = dict()
     with open(citations_file_path, mode='r', encoding='utf-8') as file:
         matrix = list()
@@ -52,8 +59,44 @@ def do_compute_impact_factor(data, dois, year):
     return num_citations/num_published_prec_years
 
 
-citations = process_citations("citations_sample.csv")
+citations = process_citations_base("citations_sample.csv")
 # print(citations)
 # print(test_do_compute_impact_factor(citations, set(['10.1016/s0140-6736(97)11096-0','10.1001/archpediatrics.2009.42','10.1097/mop.0000000000000929']),'2020', 59))
-print(do_compute_impact_factor(citations, set(get_all_citing(citations)), '2013'))
+#print(do_compute_impact_factor(citations, {'10.3389/fpsyg.2016.01483','10.1097/mop.0000000000000929','10.1177/000313481107700711','10.3414/me14-05-0004','10.3928/01477447-20180123-06','10.1002/ddr.21369','10.3889/mmej.2015.50002','10.1016/s0140-6736(97)11096-0'}, '2016'))
 
+def process_citations_pandas(citations_file_path):
+    return pd.read_csv(citations_file_path, encoding='utf-8')
+
+citations = process_citations_pandas('citations_sample.csv')
+#print(citations)
+
+# Very useful to see the infos about the table: especially for the efficiency -> memory usage
+# print(data.info())
+
+def do_compute_impact_factor_pandas(data, dois, year):
+    num = 0
+    denom = 0
+
+    # selecting only rows with year 'year'
+    data_year = data.loc[data['creation'].str.contains(year)]
+
+    #selecting only rows with previous two years
+    data_previous_two_years = data.loc[data['creation'].str.contains(str(int(year)-1)+'|'+str(int(year)-2))]
+    for doi in dois:
+
+        #selecting rows with doi == cited and adding the length of this table to num
+        data_year_cited = data_year.loc[data_year['cited'] == doi]
+        num += len(data_year_cited)
+
+        #selecting rows with doi == citing and adding the length of this table to denom
+        data_previous_years_citing = data_previous_two_years.loc[data_previous_two_years['citing'] == doi]
+        denom += len(data_previous_years_citing)
+
+    return round(num/denom, 2)
+
+print(do_compute_impact_factor_pandas(citations, {'10.3389/fpsyg.2016.01483','10.1097/mop.0000000000000929','10.1177/000313481107700711','10.3414/me14-05-0004','10.3928/01477447-20180123-06','10.1002/ddr.21369','10.3889/mmej.2015.50002','10.1016/s0140-6736(97)11096-0'}, '2016'))
+
+# l_statements = ['''do_compute_impact_factor(citations, {'10.3389/fpsyg.2016.01483','10.1097/mop.0000000000000929','10.1177/000313481107700711','10.3414/me14-05-0004','10.3928/01477447-20180123-06','10.1002/ddr.21369','10.3889/mmej.2015.50002','10.1016/s0140-6736(97)11096-0'}, '2016')''', '''do_compute_impact_factor_pandas(citations, {'10.3389/fpsyg.2016.01483','10.1097/mop.0000000000000929','10.1177/000313481107700711','10.3414/me14-05-0004','10.3928/01477447-20180123-06','10.1002/ddr.21369','10.3889/mmej.2015.50002','10.1016/s0140-6736(97)11096-0'}, '2016')''']
+# l_functions = ['do_compute_impact_factor()', 'do_compute_impact_factor_pandas()']
+#
+# print(multipleniceevaluator(l_functions, setup, l_statements))
