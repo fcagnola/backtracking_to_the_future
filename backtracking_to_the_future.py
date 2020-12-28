@@ -20,22 +20,10 @@
 # https://comp-think.github.io/2020-2021/slides/14%20-%20Project.html
 
 import csv
-from networkx import DiGraph
-
+import pandas
 
 def process_citations(citations_file_path):
-    g = DiGraph()  # for citations a directed graph would be the best choice
-
-    with open(citations_file_path, mode="r") as csv_file:  # opening csv in read-mode
-        reader = csv.DictReader(csv_file)
-
-        for row in reader:    # loop through rows, each row representing a citation
-            g.add_node(row['citing'], creation=row['creation'])  # create the citing node, with attribute 'creation'
-            g.add_node(row['cited'])                             # create cited node
-            g.add_edge(row['citing'], row['cited'], timespan=row['timespan'])  # create edge with timespan as attribute
-
-    return g  # i wonder if it would be better to return the adj dictionary or a tuple of (nodes, edges)
-
+    pass
 
 def do_compute_impact_factor(data, dois, year):
     pass
