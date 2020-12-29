@@ -14,7 +14,14 @@ def process_citations(citations_file_path):
     return data_frame
 
 dataframe = process_citations('/Users/federicocagnola/PycharmProjects/backtracking_to_the_future/citations_sample.csv')
-    
+
+def process_citations_date(citations_file_path):
+    data_frame = pandas.read_csv(citations_file_path, dtype={'citing': str, 'cited': str, 'timespan': str},
+                                 parse_dates=['creation'])
+    return data_frame
+
+df = process_citations_date('/Users/federicocagnola/PycharmProjects/backtracking_to_the_future/citations_sample.csv')
+
 def impact_factor_fede(data, dois, year):  # dois is a set, year is 4 digit string 'YYYY'
 
     if len(dois) == 0:
@@ -75,6 +82,34 @@ def impact_factor_constance(data, dois, year):
 
     return round(num/denom, 2)
 
+def do_compute_impact_factor(data, dois, year):  # DOIs is a set, year is 4 digit string 'YYYY'
+    if len(dois) == 0:
+        return 'Please insert a valid set of DOIs'
+    if type(year) == int:
+        return 'Please provide a year in string format: "YYYY"'
+
+    num = 0
+    denom = 0
+
+    # selecting only rows with year 'year'
+    data_year = data.loc[data['creation'].dt.year == int(year)]
+
+    # selecting only rows with previous two years
+    data_previous_two_years = pandas.concat([data.loc[data['creation'].dt.year == (int(year) - 1)], data.loc[data['creation'].dt.year == (int(year) - 2)]])
+
+    for doi in dois:
+        # selecting rows with doi == cited and adding the length of this table to num
+        data_year_cited = data_year.loc[data_year['cited'] == doi]
+        num += len(data_year_cited)
+
+        # selecting rows with doi == citing and adding the length of this table to denom
+        data_previous_years_citing = data_previous_two_years.loc[data_previous_two_years['citing'] == doi]
+        denom += len(data_previous_years_citing)
+
+    try:
+        return round(num / denom, 2)
+    except ZeroDivisionError:
+        return "Could not compute impact factor: no DOIs pointed to objects published in year-1 or year-2. Please try with another input set or year."
 '''
 l_statements = ['''impact_factor_fede(dataframe, {'10.3389/fpsyg.2016.01483',     # created 2016 N
                                 '10.1097/mop.0000000000000929', # created 2020 N
@@ -91,8 +126,16 @@ l_statements = ['''impact_factor_fede(dataframe, {'10.3389/fpsyg.2016.01483',   
                                 '10.3928/01477447-20180123-06', # created 2018 N
                                 '10.1002/ddr.21369',            # created 2016 N
                                 '10.3889/mmej.2015.50002',      # created 2015 Y
+                                '10.1016/s0140-6736(97)11096-0'}, "2016")''',
+                '''do_compute_impact_factor(df, {'10.3389/fpsyg.2016.01483',     # created 2016 N
+                                '10.1097/mop.0000000000000929', # created 2020 N
+                                '10.1177/000313481107700711',   # created 2011 N
+                                '10.3414/me14-05-0004',         # created 2014 Y
+                                '10.3928/01477447-20180123-06', # created 2018 N
+                                '10.1002/ddr.21369',            # created 2016 N
+                                '10.3889/mmej.2015.50002',      # created 2015 Y
                                 '10.1016/s0140-6736(97)11096-0'}, "2016")''']
-l_functions = ["impact_factor_fede()", "impact_factor_constance()"]
+l_functions = ["impact_factor_fede()", "impact_factor_constance()", "do_compute_impact_factor()"]
 
 #######################################################################################################################
 
