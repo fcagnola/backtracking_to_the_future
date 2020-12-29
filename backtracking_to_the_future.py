@@ -34,6 +34,11 @@ def process_citations(citations_file_path):
 
 
 def do_compute_impact_factor(data, dois, year):  # DOIs is a set, year is 4 digit string 'YYYY'
+    if len(dois) == 0:
+        return 'Please insert a valid set of DOIs'
+    if type(year) == int:
+        return 'Please provide a year in string format: "YYYY"'
+
     num = 0
     denom = 0
 
@@ -41,7 +46,7 @@ def do_compute_impact_factor(data, dois, year):  # DOIs is a set, year is 4 digi
     data_year = data.loc[data['creation'].dt.year == int(year)]
 
     # selecting only rows with previous two years
-    data_previous_two_years = data.loc[data['creation'].dt.year == (int(year) - 1) | (int(year) - 2)] #NOT WORKING, TO BE RETESTED
+    data_previous_two_years = pandas.concat([data.loc[data['creation'].dt.year == (int(year) - 1)], data.loc[data['creation'].dt.year == (int(year) - 2)]])
 
     for doi in dois:
         # selecting rows with doi == cited and adding the length of this table to num
@@ -52,22 +57,11 @@ def do_compute_impact_factor(data, dois, year):  # DOIs is a set, year is 4 digi
         data_previous_years_citing = data_previous_two_years.loc[data_previous_two_years['citing'] == doi]
         denom += len(data_previous_years_citing)
 
-    return round(num / denom, 2)
-
-
-print(do_compute_impact_factor(process_citations('citations_sample.csv'), {'10.3389/fpsyg.2016.01483',  # created 2016 N
-                                                                           '10.1097/mop.0000000000000929',
-                                                                           # created 2020 N
-                                                                           '10.1177/000313481107700711',
-                                                                           # created 2011 N
-                                                                           '10.3414/me14-05-0004',  # created 2014 Y
-                                                                           '10.3928/01477447-20180123-06',
-                                                                           # created 2018 N
-                                                                           '10.1002/ddr.21369',  # created 2016 N
-                                                                           '10.3889/mmej.2015.50002',  # created 2015 Y
-                                                                           '10.1016/s0140-6736(97)11096-0'},
-                               # no creation
-                               '2016'))
+    try:
+        return round(num / denom, 2)
+    except ZeroDivisionError:
+        return "Could not compute impact factor: no DOIs pointed to objects published in \n" \
+               "year-1 or year-2. Please try with another input set or year."
 
 
 def do_get_co_citations(data, doi1, doi2):
