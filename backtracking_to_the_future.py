@@ -22,6 +22,7 @@
 import pandas
 from networkx import DiGraph
 import numpy as np
+import re
 
 pandas.set_option('display.max_columns', 5)
 pandas.set_option('display.width', 800)
@@ -45,7 +46,7 @@ def do_compute_impact_factor(data, dois, year):  # DOIs is a set, year is 4 digi
     # selecting only rows with year 'year'
     data_year = data.loc[data['creation'].dt.year == int(year)]
 
-    # selecting only rows with previous two years
+    # selecting only rows with previous two years: concatenate
     data_previous_two_years = pandas.concat([data.loc[data['creation'].dt.year == (int(year) - 1)], data.loc[data['creation'].dt.year == (int(year) - 2)]])
 
     for doi in dois:
@@ -84,16 +85,14 @@ def do_get_citation_network(data, start, end):  # F
     while i != (int(end) + 1):
         ls_dfs.append(data[data['creation'].dt.year == i])  # returns 436 instead of 442 rows
         i += 1
-    dataset = pandas.concat(ls_dfs)  # the dataframe to convert to graph
+    d = pandas.concat(ls_dfs)
+    print(pandas.concat(ls_dfs))
+    #dataset = do_compute_date_column(pandas.concat(ls_dfs))  # the dataframe to convert to graph
+    # i need to add a date column for the cited article, maybe dynamic programming to speed up
     # ALL DOIs in the second column MUST also be in the first, otherwise remove that row.
 
     # create network (use developed function)
     graph = DiGraph()
-
-
-print(do_get_citation_network(
-    process_citations('/Users/federicocagnola/PycharmProjects/backtracking_to_the_future/citations_sample.csv'), 2018,
-    2020))
 
 
 def do_merge_graphs(data, g1, g2):  # F
@@ -110,3 +109,22 @@ def do_search(data, query, field):
 
 def do_filter_by_value(data, query, field):
     pass
+
+
+def do_compute_date_column(timespan):  # given a timespan 'PxxYxxMxxD' a dict is returned
+    t = timespan.strip('PD')
+    ls = re.split('[YM]', t)
+    timedict = dict()
+    for idx, value in enumerate(ls):
+        if idx == 0:
+            timedict['Y'] = value
+        elif idx == 1 and value != '':
+            timedict['M'] = value
+        elif idx == 2 and value != '':
+            timedict['D'] = value
+    return timedict                    # format {'Y': 'x', 'M': 'x', 'D': 'x'}
+
+
+print(do_get_citation_network(
+    process_citations('/Users/federicocagnola/PycharmProjects/backtracking_to_the_future/citations_sample.csv'), 2018,
+    2020))
