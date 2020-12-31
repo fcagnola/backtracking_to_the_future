@@ -19,11 +19,11 @@
 # which is not compliant at all with the specifications that have been provided at
 # https://comp-think.github.io/2020-2021/slides/14%20-%20Project.html
 
-import csv
 import pandas
 
 def process_citations(citations_file_path):
-    pass
+    data_frame = pandas.read_csv(citations_file_path, dtype={'citing': str, 'cited': str, 'timespan': str}, parse_dates=['creation'])
+    return data_frame
 
 def do_compute_impact_factor(data, dois, year):
     pass
