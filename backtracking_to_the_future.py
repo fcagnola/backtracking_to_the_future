@@ -86,8 +86,9 @@ def do_get_citation_network(data, start, end):  # F
         ls_dfs.append(data[data['creation'].dt.year == i])  # returns 436 instead of 442 rows
         i += 1
     d = pandas.concat(ls_dfs)
-    print(pandas.concat(ls_dfs))
-    #dataset = do_compute_date_column(pandas.concat(ls_dfs))  # the dataframe to convert to graph
+    print(d)
+    d['creation_cited'] = d[['creation', 'timespan']].apply(do_compute_date_column, axis=1)
+    print(d)
     # i need to add a date column for the cited article, maybe dynamic programming to speed up
     # ALL DOIs in the second column MUST also be in the first, otherwise remove that row.
 
@@ -111,20 +112,38 @@ def do_filter_by_value(data, query, field):
     pass
 
 
-def do_compute_date_column(timespan):  # given a timespan 'PxxYxxMxxD' a dict is returned
-    t = timespan.strip('PD')
-    ls = re.split('[YM]', t)
-    timedict = dict()
-    for idx, value in enumerate(ls):
-        if idx == 0:
-            timedict['Y'] = value
-        elif idx == 1 and value != '':
-            timedict['M'] = value
-        elif idx == 2 and value != '':
-            timedict['D'] = value
-    return timedict                    # format {'Y': 'x', 'M': 'x', 'D': 'x'}
+def do_compute_date_column(row):  # this function takes a pd.Series as input
+
+    timespan = row['timespan']    # in the row, the elem at index 'timespan' is the timespan in 'P_Y_M_D' format
+    creation = row['creation']    # in the same row, the elem at index 'creation' is the date of creation
+    negative = False
+    if timespan[0] == "-":
+        negative = True
+    timespan = timespan.strip('PD')     # i remove the 'P' at the beginning and the 'D' at the end of the timespan
+    ls = re.split('[YM]', timespan)     # then a list is created in [yy, mm, dd] format
+
+    date_column_value = creation        # this will be the return value: computed creation time for cited DOI
+    if negative == False:
+        for idx, value in enumerate(ls):    # loop through elements in the list (there could only be YY or YY-MM)!
+            if idx == 0:                    # first elem will always be year: compute year by subtraction
+                date_column_value = date_column_value - np.timedelta64(value, 'Y')
+            elif idx == 1 and value != '':  # second elem will always be month: compute month by subtraction
+                date_column_value = date_column_value - np.timedelta64(value, 'M')
+            elif idx == 2 and value != '':  # third elem will always be day: compute day by subtraction
+                date_column_value = date_column_value - np.timedelta64(value, 'D')
+    else:
+        for idx, value in enumerate(ls):    # loop through elements in the list (there could only be YY or YY-MM)!
+            if idx == 0:                    # first elem will always be year: compute year by subtraction
+                date_column_value = date_column_value + np.timedelta64(value, 'Y')
+            elif idx == 1 and value != '':  # second elem will always be month: compute month by subtraction
+                date_column_value = date_column_value + np.timedelta64(value, 'M')
+            elif idx == 2 and value != '':  # third elem will always be day: compute day by subtraction
+                date_column_value = date_column_value + np.timedelta64(value, 'D')
+
+    return date_column_value
 
 
+# print(do_compute_date_column('1990-01-02', 'P54Y2M6D'))
 print(do_get_citation_network(
     process_citations('/Users/federicocagnola/PycharmProjects/backtracking_to_the_future/citations_sample.csv'), 2018,
     2020))
