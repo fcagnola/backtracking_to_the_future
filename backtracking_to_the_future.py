@@ -23,17 +23,82 @@ import csv
 import pandas as pd
 
 def process_citations(citations_file_path):
-    data = pd.read_csv(citations_file_path)
-    return data.to_string() #t returns the entire DataFrame( the bi-dimensional data structure of Pandas library)
+    data_frame = pd.read_csv(citations_file_path, dtype={'citing': str, 'cited': str, 'timespan': str},   # we're ensuring that the object of our DataFrame will be all strings
+                                 parse_dates=['creation'])                                                # run the command to read the creation column with the knowledge of 'year', 'month' etc.
+    return data_frame
 
-citations_file_path = "Citations/citations_sample.csv"
-print(process_citations(citations_file_path))
+citations_file_path = "/Users/luisaammirati/backtracking_to_the_future/Citations/citations_sample.csv"
+#print(process_citations(citations_file_path))
 
-def do_compute_impact_factor(data, dois, year):
-    pass
+def do_compute_impact_factor(data, dois, year):  # DOIs is a set, year is 4 digit string 'YYYY'
+    if len(dois) == 0:                             #    base case: if 'dois' set is empty
+        return 'Please insert a valid set of DOIs'
+    if type(year) == int:
+        return 'Please provide a year in string format: "YYYY"'
 
-dois = {"10.1007/978-3-030-49672-2_1", "10.1590/0102-311x00195519", "10.4018/978-1-7998-1534-1.ch015","10.1016/s0140-6736(97)11096-0"}
-data = process_citations(citations_file_path)
+    num = 0
+    denom = 0
+
+    # selecting only rows with year 'year'  --> we're storing in 'data_year' variable a new DataFrame = we've narrowed it down
+    # we convert 'year' from string to integer, because due to 'parse_dates', the machine is able to read the object in the creation column as integer
+    # the same of 'data_year = data.loc[data.creation.dt.year == int(year)]
+    data_year = data.loc[data['creation'].dt.year == int(year)]
+
+    # selecting only rows with previous two years: concatenate
+    # we combine/store the two solutions ( two different DataFrames) into the same variable
+    # the same if 'data.loc[data.creation.dt.year == etc.'
+    data_previous_two_years = pd.concat([data.loc[data['creation'].dt.year == (int(year) - 1)], data.loc[data['creation'].dt.year == (int(year) - 2)]])
+
+    for doi in dois:
+        # selecting rows with doi == cited and adding the length of this table to num
+        # num = "the number of citations all the documents in dois have received in year year" --> 'receiving a citation' refers to articles that are cited in that year (of publication of 'citing' article)
+        # starting with the DataFrame obtained by line n.45,
+        # we're narrowing it down again by accepting in our updated DataFrame only rows cointain , in the 'cited' column, the dois in 'dois' set
+        data_year_cited = data_year.loc[data_year['cited'] == doi]
+        num += len(data_year_cited)  # we count the rows of the DataFrame stored in 'data_year_cited'
+
+        # selecting rows with doi == citing and adding the length of this table to denom
+        # denom = the number of documents in dois published in the previous two years --> 'published', so we're speaking about 'citing' article
+        data_previous_years_citing = data_previous_two_years.loc[data_previous_two_years['citing'] == doi]
+        denom += len(data_previous_years_citing)
+
+    print(num, denom)
+    try:
+        return round(num / denom, 2)
+    except ZeroDivisionError:
+        return "Could not compute impact factor: no DOIs pointed to objects published in \n" \
+               "year-1 or year-2. Please try with another input set or year."
+
+print(do_compute_impact_factor((process_citations(citations_file_path)),
+                               {"10.1080/13548500701235732",  #2008
+                                "10.3109/9780203911723-4", #2003
+                                "10.1016/s0140-6736(97)11096-0" #2009
+                                "10.1016/s0140-6736(97)11096-0"  #2010
+                                "10.1177/2042098619854010"  #2019
+                                "10.1002/14651858.cd004407.pub2" #2005
+                                "10.1007/s12124-011-9160-0"}, "2005"))
+print(do_compute_impact_factor(process_citations(citations_file_path),
+                                {'10.3389/fpsyg.2016.01483',     # created 2016 N
+                                 '10.1097/mop.0000000000000929', # created 2020 N
+                                 '10.1177/000313481107700711',   # created 2011 N
+                                 '10.3414/me14-05-0004',         # created 2014 Y
+                                 '10.3928/01477447-20180123-06', # created 2018 N
+                                 '10.1002/ddr.21369',            # created 2016 N
+                                 '10.3889/mmej.2015.50002',      # created 2015 Y
+                                 '10.1016/s0140-6736(97)11096-0'}, # no creation
+                                '2016'))
+print(do_compute_impact_factor(process_citations(citations_file_path),
+                                set(), '2016'))
+print(do_compute_impact_factor(process_citations(citations_file_path),
+                                 {'10.3389/fpsyg.2016.01483',     # created 2016 N
+                                 '10.1097/mop.0000000000000929', # created 2020 N
+                                 '10.1177/000313481107700711',   # created 2011 N
+                                 '10.3414/me14-05-0004',         # created 2014 Y
+                                 '10.3928/01477447-20180123-06', # created 2018 N
+                                 '10.1002/ddr.21369',            # created 2016 N
+                                 '10.3889/mmej.2015.50002',      # created 2015 Y
+                                 '10.1016/s0140-6736(97)11096-0'},
+                                 2016))
 
 def do_get_co_citations(data, doi1, doi2):
     pass
