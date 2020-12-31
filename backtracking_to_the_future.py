@@ -80,17 +80,16 @@ def do_get_citation_network(data, start, end):  # F
         return "Invalid input: enter an end year greater than the start"
 
     # filter data on given time window start->end
-    i = int(start)  # iterator, set as ==start, then 1 is added each iter until 'end' is reached
-    ls_dfs = []  # list will contain dataframes for years in time window
+    i = int(start)      # iterator, set as ==start, then 1 is added each iter until 'end' is reached
+    ls_dfs = []         # list will contain dataframes for each year in time window
     while i != (int(end) + 1):
-        ls_dfs.append(data[data['creation'].dt.year == i])  # returns 436 instead of 442 rows
-        i += 1
-    d = pandas.concat(ls_dfs)
-    print(d)
+        ls_dfs.append(data[data['creation'].dt.year == i])  # add only rows with creation year == iterator
+        i += 1                                              # increment iterator
+
+    d = pandas.concat(ls_dfs)       # concatenate dataframes, create dataframe for whole timewindow (start>end)
+    # the following line creates a 'creation_cited' column with dates for the cited DOIs, through an ancillary function
     d['creation_cited'] = d[['creation', 'timespan']].apply(do_compute_date_column, axis=1)
     print(d)
-    # i need to add a date column for the cited article, maybe dynamic programming to speed up
-    # ALL DOIs in the second column MUST also be in the first, otherwise remove that row.
 
     # create network (use developed function)
     graph = DiGraph()
