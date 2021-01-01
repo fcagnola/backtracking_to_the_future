@@ -23,7 +23,6 @@ import pandas
 from networkx import DiGraph, from_pandas_edgelist, compose
 import numpy as np
 import re
-from pprint import pprint
 
 pandas.set_option('display.max_columns', 5)
 pandas.set_option('display.width', 800)
