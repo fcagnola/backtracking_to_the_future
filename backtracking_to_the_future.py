@@ -20,9 +20,10 @@
 # https://comp-think.github.io/2020-2021/slides/14%20-%20Project.html
 
 import pandas
-from networkx import DiGraph
+from networkx import DiGraph, from_pandas_edgelist, compose
 import numpy as np
 import re
+from pprint import pprint
 
 pandas.set_option('display.max_columns', 5)
 pandas.set_option('display.width', 800)
@@ -86,16 +87,21 @@ def do_get_citation_network(data, start, end):  # F
         ls_dfs.append(data[data['creation'].dt.year == i])  # add only rows with creation year == iterator
         i += 1                                              # increment iterator
 
-    d = pandas.concat(ls_dfs)       # concatenate dataframes, create dataframe for whole timewindow (start>end)
-    # the following line creates a 'creation_cited' column with dates for the cited DOIs, through an ancillary function
+    # concatenate dataframes, create dataframe for whole timewindow (start>end)
+    d = pandas.concat(ls_dfs)
+    # compute a 'creation_cited' column with dates for the cited DOIs, through an ancillary function
     d['creation_cited'] = d[['creation', 'timespan']].apply(do_compute_date_column, axis=1)
-    print(d)
+    # NEED TO REMOVE DOIs WHICH HAVE CREATION CITED VALUE != TIMEWINDOW START-END
 
-    # create network (use developed function)
-    graph = DiGraph()
+    # create actual Directed Network through networkx, did not include attr to make computation faster
+    graph = from_pandas_edgelist(d, source='citing', target='cited', create_using=DiGraph)
+
+    return graph
+
 
 
 def do_merge_graphs(data, g1, g2):  # F
+    # available functions are 'compose' and 'update'
     pass
 
 
@@ -111,19 +117,21 @@ def do_filter_by_value(data, query, field):
     pass
 
 
-def do_compute_date_column(row):  # this function takes a pd.Series as input
+def do_compute_date_column(row):  # this function takes a pd.Series as input (row of a pd.DataFrame)
 
-    timespan = row['timespan']    # in the row, the elem at index 'timespan' is the timespan in 'P_Y_M_D' format
-    creation = row['creation']    # in the same row, the elem at index 'creation' is the date of creation
-    negative = False
+    timespan = row['timespan']    # the elem at index 'timespan' is the timespan in 'P_Y_M_D' format
+    creation = row['creation']    # the elem at index 'creation' is the date of creation in 'YYYY-MM-DD' format
+
+    negative = False              # timespan could be negative, in that case the computation sould be reversed
     if timespan[0] == "-":
         negative = True
+
     timespan = timespan.strip('PD')     # i remove the 'P' at the beginning and the 'D' at the end of the timespan
     ls = re.split('[YM]', timespan)     # then a list is created in [yy, mm, dd] format
 
     date_column_value = creation        # this will be the return value: computed creation time for cited DOI
-    if negative == False:
-        for idx, value in enumerate(ls):    # loop through elements in the list (there could only be YY or YY-MM)!
+    if not negative:
+        for idx, value in enumerate(ls):    # loop through elements in the list (there could be YY, YY-MM or YY-MM-DD)
             if idx == 0:                    # first elem will always be year: compute year by subtraction
                 date_column_value = date_column_value - np.timedelta64(value, 'Y')
             elif idx == 1 and value != '':  # second elem will always be month: compute month by subtraction
