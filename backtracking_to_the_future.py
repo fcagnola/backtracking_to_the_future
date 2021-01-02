@@ -110,10 +110,17 @@ def do_get_co_citations(data, doi1, doi2):   #doi1 and doi2 are strings identify
     else:
         return len(data_doi1_doi2) - len(data_less_duplicated_values) #detecting how many values (duplicated) have been removed
 
+def test_do_get_co_citations(data, doi1, doi2, expected):
+    result = do_get_co_citations(data, doi1, doi2)
+    if result == expected:
+        return True
+    else:
+        return False
 
 print(do_get_co_citations(process_citations(citations_file_path), "10.1177/000313481107700711", '10.1016/s0140-6736(97)11096-0' )) #no co-citations
 print(do_get_co_citations(process_citations(citations_file_path), "10.2807/1560-7917.es.2019.24.26.1900376", '10.1016/s0140-6736(97)11096-0' )) # 1 co-citation
 print(do_get_co_citations(process_citations(citations_file_path), "10.1001/archpediatrics.2009.42", '10.1016/s0140-6736(97)11096-0' )) # 1 co-citation
+print(test_do_get_co_citations(process_citations(citations_file_path), "10.1177/000313481107700711", '10.1016/s0140-6736(97)11096-0', "The doi1 and doi2 are never cited together by other documents")) #True
 
 def do_get_bibliographic_coupling(data, doi1, doi2):
     pass
