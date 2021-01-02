@@ -15,7 +15,7 @@
 #
 #
 # This file is just a stub of the particular module that every group should
-# implement for making its project work. In fact, all these functions returns None,
+# implement for making its project work. In fact, all these functions return None,
 # which is not compliant at all with the specifications that have been provided at
 # https://comp-think.github.io/2020-2021/slides/14%20-%20Project.html
 
@@ -148,7 +148,7 @@ def do_compute_date_column(row):  # this function takes a pd.Series as input (ro
             elif idx == 2 and value != '':  # third elem will always be day: compute day by subtraction
                 date_column_value = date_column_value + np.timedelta64(value, 'D')
 
-    return date_column_value
+    return date_column_value.date()
 
 
 # print(do_compute_date_column('1990-01-02', 'P54Y2M6D'))
