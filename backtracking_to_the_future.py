@@ -100,10 +100,14 @@ def do_get_citation_network(data, start, end):  # F
     return graph
 
 
-def do_merge_graphs(data, g1, g2):  # F
-    # available functions are 'compose' and 'update'
-    g = compose(g1, g2)
-    return g
+def do_merge_graphs(data, g1, g2):  # both input graphs will be directed
+
+    # input validation, as per project specifications
+    if type(g1) is not type(g2):
+        return None
+
+    # networkx' compose functions joins two graphs
+    return compose(g1, g2)
 
 
 def do_search_by_prefix(data, prefix, is_citing):
@@ -148,14 +152,5 @@ def do_compute_date_column(row):  # this function takes a pd.Series as input (ro
             elif idx == 2 and value != '':  # third elem will always be day: compute day by subtraction
                 date_column_value = date_column_value + np.timedelta64(value, 'D')
 
-    return date_column_value.date() #.year only returns the year, could be wise since it is not a perfect computation
+    return date_column_value.date()  # .year only returns the year, could be wise since it is not a perfect computation
 
-
-g = do_get_citation_network(
-    process_citations('/Users/federicocagnola/PycharmProjects/backtracking_to_the_future/citations_sample.csv'), 2018,
-    2020)
-h = do_get_citation_network(process_citations('/Users/federicocagnola/PycharmProjects/backtracking_to_the_future/citations_sample.csv'), 2011,
-    2018)
-u = do_merge_graphs(process_citations('/Users/federicocagnola/PycharmProjects/backtracking_to_the_future/citations_sample.csv'),g,h)
-
-print(len(u.edges), len(h.edges)+len(g.edges))
