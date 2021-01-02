@@ -1,13 +1,15 @@
 import csv
 import pandas as pd
+import re
 
 
 
 #my code before pandas
 def process_citations_base(citations_file_path):
     # dict_cit = dict()
+    matrix = list()
+
     with open(citations_file_path, mode='r', encoding='utf-8') as file:
-        matrix = list()
         # csvFile = csv.reader(file, delimiter=',')
         # next(csvFile)
         # for line in csvFile:
@@ -69,6 +71,12 @@ citations_pandas = process_citations_pandas('citations_sample.csv')
 # Very useful to see the infos about the table: especially for the efficiency -> memory usage
 # print(data.info())
 
+def process_citations_pandas_date(citations_file_path):
+    data_frame = pd.read_csv(citations_file_path, dtype={'citing': str, 'cited': str, 'timespan': str}, parse_dates=['creation'])
+    return data_frame
+
+cit_pandas_dates = process_citations_pandas_date('citations_sample.csv')
+
 def do_compute_impact_factor_pandas(data, dois, year):
     num = 0
     denom = 0
@@ -90,5 +98,100 @@ def do_compute_impact_factor_pandas(data, dois, year):
 
     return round(num/denom, 2)
 
-print(do_compute_impact_factor_pandas(citations_pandas, {'10.3389/fpsyg.2016.01483','10.1097/mop.0000000000000929','10.1177/000313481107700711','10.3414/me14-05-0004','10.3928/01477447-20180123-06','10.1002/ddr.21369','10.3889/mmej.2015.50002','10.1016/s0140-6736(97)11096-0'}, '2016'))
+def do_compute_impact_factor_pandas_two(data, dois, year):
+    num = 0
+    denom = set()
 
+    for doi in dois:
+        print(data.query('citing.to_string == {}'.format(doi)))
+
+    return round(num / len(denom), 2)
+
+
+#print(do_compute_impact_factor_pandas(citations_pandas, {'10.3389/fpsyg.2016.01483','10.1097/mop.0000000000000929','10.1177/000313481107700711','10.3414/me14-05-0004','10.3928/01477447-20180123-06','10.1002/ddr.21369','10.3889/mmej.2015.50002','10.1016/s0140-6736(97)11096-0'}, '2016'))
+#print(do_compute_impact_factor_pandas_two(cit_pandas_dates, {'10.3389/fpsyg.2016.01483','10.1097/mop.0000000000000929','10.1177/000313481107700711','10.3414/me14-05-0004','10.3928/01477447-20180123-06','10.1002/ddr.21369','10.3889/mmej.2015.50002','10.1016/s0140-6736(97)11096-0'}, '2016'))
+#print(do_compute_impact_factor(citations, {'10.3389/fpsyg.2016.01483','10.1097/mop.0000000000000929','10.1177/000313481107700711','10.3414/me14-05-0004','10.3928/01477447-20180123-06','10.1002/ddr.21369','10.3889/mmej.2015.50002','10.1016/s0140-6736(97)11096-0'}, '2016'))
+
+
+#the function is working, but can't be used with 'creation' as Date format, I have to find a way to deal with it
+def do_search(data, query, field):
+
+    #preliminary verifications on the data provided
+    if type(query) is not str or query == '':
+        return 'Please provide a valid string as a query'
+    if field not in data.columns:
+        return 'Please provide a valid field for the data'
+
+    #base case: if there is no 'and' or 'or'
+    if not re.search(r'(\sand\s|\sor\s)', query):
+
+        #the search will be case insensitive
+        result = '(?i)'
+
+        # transforms the query in correct regex and escapes ambiguous characters
+        for letter in query:
+            if letter == '*':
+                result += '.*'
+            elif letter == '.':
+                result += '\.'
+            elif letter == '(':
+                result += '\('
+            elif letter == ')':
+                result += '\)'
+            else:
+                result += letter
+
+        #if the query contains 'not'
+        if re.findall(r'\bnot\s', query) != []:
+
+            #removes the word from the query
+            result = re.sub(r'\bnot\s', r'', result)
+            print("There's a 'not'")
+            print(result)
+
+            #selects only the rows where the statement is not true on the column 'field'
+            return data[data[field].str.count(result)==0]
+        else:
+            print(result)
+            # else selects only the rows where the query returns true on the column 'field'
+            return data[data[field].str.count(result)>0]
+
+    #recursive cases: when there are some 'and' or 'or'
+    else:
+
+        #creates a list with all the operators from left to right
+        found = re.findall(r'\sand\s|\sor\s', query)
+
+        #if the first one is an 'and'
+        if found[0] == ' and ':
+            print("there's an 'and'")
+
+            #splits the query in two and removes 'and'
+            splitted = query.split(' and ')
+
+            # in this line there are two recursions: the data provided to the second part of the query
+            # is the one returned by the call of this function on the first part.
+            # The .join function allows the query to have multiple 'and' inside and treats them one after the other.
+            return do_search(do_search(data, splitted[0], field), ' and '.join(splitted[1:]), field)
+
+        # if the first one is an 'or'
+        if found[0] == ' or ':
+            print("there's an 'or'")
+
+            #splits the query in two and removes the 'or'
+            splitted = query.split(' or ')
+
+            #This time the two recursions are done separately and joined in the return statement
+            left = do_search(data, splitted[0], field)
+            #The .join function is to treat a query with multiple 'or'
+            right = do_search(data, ' or ' .join(splitted[1:]), field)
+
+            #how = 'outer' uses the union of keys from both Dataframes. Attention: the keys are not mainained
+            return left.merge(right, how='outer')
+
+# print(do_search(citations_pandas, 2, 'citing'))
+# print(do_search(citations_pandas, 'hello', 'cit'))
+# print("Doing the search for '-01 and not 2008' :\n", do_search(citations_pandas, '-01 and not 2008', 'creation'))
+print("Doing the search for '2007 or not 2008 and -01 or -02' :\n", do_search(citations_pandas, '2007 or not 2008 and -01 or -02', 'creation'))
+print("Doing the search for '10.1057*biosoc' :\n", do_search(citations_pandas, '10.1057*biosoc', 'citing'))
+print("Doing the search for '01461672 and 115' :\n", do_search(citations_pandas, '01461672 and 115', 'cited'))
