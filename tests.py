@@ -122,7 +122,7 @@ def do_search(data, query, field):
     if field not in data.columns:
         return 'Please provide a valid field for the data'
 
-    #base case: if there is no 'and' or 'or'
+    #base case: if there are no operators expcept 'not'
     if not re.search(r'(\sand\s|\sor\s)', query):
 
         #the search will be case insensitive
