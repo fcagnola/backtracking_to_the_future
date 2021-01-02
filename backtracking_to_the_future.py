@@ -151,7 +151,11 @@ def do_compute_date_column(row):  # this function takes a pd.Series as input (ro
     return date_column_value.date() #.year only returns the year, could be wise since it is not a perfect computation
 
 
-# print(do_compute_date_column('1990-01-02', 'P54Y2M6D'))
-print(do_get_citation_network(
+g = do_get_citation_network(
     process_citations('/Users/federicocagnola/PycharmProjects/backtracking_to_the_future/citations_sample.csv'), 2018,
-    2020))
+    2020)
+h = do_get_citation_network(process_citations('/Users/federicocagnola/PycharmProjects/backtracking_to_the_future/citations_sample.csv'), 2011,
+    2018)
+u = do_merge_graphs(process_citations('/Users/federicocagnola/PycharmProjects/backtracking_to_the_future/citations_sample.csv'),g,h)
+
+print(len(u.edges), len(h.edges)+len(g.edges))
