@@ -101,7 +101,7 @@ print(do_compute_impact_factor(process_citations(citations_file_path),
                                  2016))
 
 def do_get_co_citations(data, doi1, doi2):   #doi1 and doi2 are strings identifying 2 different 'cited' article
-    data_doi1_doi2 = data.loc[data['cited'].isin([doi1, doi2])]  # a Dataframe cointaining only the rows with doi1 and doi2 in 'cited' column
+    data_doi1_doi2 = data[["citing","cited"]].loc[data['cited'].isin([doi1, doi2])]  # a Dataframe (with 2 columns) cointaining only the rows with doi1 and doi2 in 'cited' column
     # if a 'citing' document is repeat twice that means it cites both doi1 and doi2 articles (which are the only taken into account by the 'data_doi1_doi2' DataFrame
     data_less_duplicated_values = data_doi1_doi2.drop_duplicates(subset=['citing'])  #'drop_duplicate' removes duplicates on specific column(s) declared by 'subset'.
 
