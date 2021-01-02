@@ -94,16 +94,16 @@ def do_get_citation_network(data, start, end):  # F
     d['creation_cited'] = d[['creation', 'timespan']].apply(do_compute_date_column, axis=1)
     # NEED TO REMOVE DOIs WHICH HAVE CREATION CITED VALUE != TIMEWINDOW START-END
 
-    # create actual Directed Network through networkx, did not include attr to make computation faster
+    # create actual Directed Network through networkx
     graph = from_pandas_edgelist(d, source='citing', target='cited', create_using=DiGraph)
 
     return graph
 
 
-
 def do_merge_graphs(data, g1, g2):  # F
     # available functions are 'compose' and 'update'
-    pass
+    g = compose(g1, g2)
+    return g
 
 
 def do_search_by_prefix(data, prefix, is_citing):
@@ -123,7 +123,7 @@ def do_compute_date_column(row):  # this function takes a pd.Series as input (ro
     timespan = row['timespan']    # the elem at index 'timespan' is the timespan in 'P_Y_M_D' format
     creation = row['creation']    # the elem at index 'creation' is the date of creation in 'YYYY-MM-DD' format
 
-    negative = False              # timespan could be negative, in that case the computation sould be reversed
+    negative = False              # timespan could be negative, in that case the computation should be reversed
     if timespan[0] == "-":
         negative = True
 
