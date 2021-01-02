@@ -25,10 +25,10 @@ import pandas as pd
 def process_citations(citations_file_path):
     data_frame = pd.read_csv(citations_file_path, dtype={'citing': str, 'cited': str, 'timespan': str},   # we're ensuring that the object of our DataFrame will be all strings
                                  parse_dates=['creation'])                                                # run the command to read the creation column with the knowledge of 'year', 'month' etc.
-    return data_frame
+    return data_frame #['citing'].value_counts()
 
 citations_file_path = "/Users/luisaammirati/backtracking_to_the_future/Citations/citations_sample.csv"
-#print(process_citations(citations_file_path))
+print(process_citations(citations_file_path))
 
 def do_compute_impact_factor(data, dois, year):  # DOIs is a set, year is 4 digit string 'YYYY'
     if len(dois) == 0:                             #    base case: if 'dois' set is empty
@@ -100,8 +100,20 @@ print(do_compute_impact_factor(process_citations(citations_file_path),
                                  '10.1016/s0140-6736(97)11096-0'},
                                  2016))
 
-def do_get_co_citations(data, doi1, doi2):
-    pass
+def do_get_co_citations(data, doi1, doi2):   #doi1 and doi2 are strings identifying 2 different 'cited' article
+    data_doi1_doi2 = data.loc[data['cited'].isin([doi1, doi2])]  # a Dataframe cointaining only the rows with doi1 and doi2 in 'cited' column
+    # if a 'citing' document is repeat twice that means it cites both doi1 and doi2 articles (which are the only taken into account by the 'data_doi1_doi2' DataFrame
+    data_less_duplicated_values = data_doi1_doi2.drop_duplicates(subset=['citing'])  #'drop_duplicate' removes duplicates on specific column(s) declared by 'subset'.
+
+    if len(data_doi1_doi2) == len(data_less_duplicated_values): #that means that 'drop_duplicates' did not find any duplicated value, so any co-citations
+        return "The doi1 and doi2 are never cited together by other documents"
+    else:
+        return len(data_doi1_doi2) - len(data_less_duplicated_values) #detecting how many values (duplicated) have been removed
+
+
+print(do_get_co_citations(process_citations(citations_file_path), "10.1177/000313481107700711", '10.1016/s0140-6736(97)11096-0' )) #no co-citations
+print(do_get_co_citations(process_citations(citations_file_path), "10.2807/1560-7917.es.2019.24.26.1900376", '10.1016/s0140-6736(97)11096-0' )) # 1 co-citation
+print(do_get_co_citations(process_citations(citations_file_path), "10.1001/archpediatrics.2009.42", '10.1016/s0140-6736(97)11096-0' )) # 1 co-citation
 
 def do_get_bibliographic_coupling(data, doi1, doi2):
     pass
