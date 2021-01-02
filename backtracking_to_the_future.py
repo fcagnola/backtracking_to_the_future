@@ -148,7 +148,7 @@ def do_compute_date_column(row):  # this function takes a pd.Series as input (ro
             elif idx == 2 and value != '':  # third elem will always be day: compute day by subtraction
                 date_column_value = date_column_value + np.timedelta64(value, 'D')
 
-    return date_column_value.date()
+    return date_column_value.date() #.year only returns the year, could be wise since it is not a perfect computation
 
 
 # print(do_compute_date_column('1990-01-02', 'P54Y2M6D'))
