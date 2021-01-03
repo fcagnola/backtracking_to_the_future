@@ -24,8 +24,8 @@ my_be = BibliometricEngine('citations_sample.csv')
 for i in range(2016, 2020):
     print(my_be.compute_impact_factor({'10.3389/fpsyg.2016.01483', '10.1097/mop.0000000000000929', '10.1177/000313481107700711','10.3414/me14-05-0004','10.3928/01477447-20180123-06','10.1002/ddr.21369','10.3889/mmej.2015.50002','10.1016/s0140-6736(97)11096-0'}, str(i)))
 
-for i in range(2017, 2019):
-    for l in range(2018, 2020):
-        print(my_be.get_citation_network(i, l).nodes)
+# for i in range(2017, 2019):
+#     for l in range(2018, 2020):
+#         print(my_be.get_citation_network(i, l).nodes)
 
 
