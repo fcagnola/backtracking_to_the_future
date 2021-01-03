@@ -92,8 +92,8 @@ def do_get_citation_network(data, start, end):  # F
 
     # concatenate dataframes, create dataframe for whole timewindow (start>end)
     d = pandas.concat(ls_dfs)
-    # compute a 'creation_cited' column with dates for the cited DOIs, through an ancillary function
-    d['creation_cited'] = d[['creation', 'timespan']].apply(do_compute_date_column, axis=1)
+    # compute a 'creation_cited' column with dates for the cited DOIs, through ancillary function
+    d['creation_cited'] = d[['cited', 'creation', 'timespan']].apply(do_compute_date_column, axis=1)
     # NEED TO REMOVE DOIs WHICH HAVE CREATION CITED VALUE != TIMEWINDOW START-END
 
     # create actual Directed Network through networkx
@@ -135,7 +135,7 @@ def do_compute_date_column(row):  # input is always pd.Series (row of a pd.DataF
 
     if row['cited'] in date_dict:        # base case: result already computed and in global dict
         date_column_value = date_dict[row['cited']]
-        return date_column_value.date().year
+        return date_dict[row['cited']]
 
     else:                                # computation and storage for future use in the global dict
 
@@ -163,5 +163,6 @@ def do_compute_date_column(row):  # input is always pd.Series (row of a pd.DataF
                     date_column_value = date_column_value + np.timedelta64(value, 'M')
                 elif idx == 2 and value != '':  # third elem is always day: compute day
                     date_column_value = date_column_value + np.timedelta64(value, 'D')
-        date_dict[row['cited']] = date_column_value.date().year
-        return date_column_value.date().year
+
+        date_dict[row['cited']] = date_column_value.date().year   # store result for future use
+        return date_dict[row['cited']]
