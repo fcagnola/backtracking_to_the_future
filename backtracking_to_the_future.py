@@ -37,7 +37,7 @@ def process_citations(citations_file_path):  # years in 'YYYY' format should be 
 
 def do_compute_impact_factor(data, dois, year):  # DOIs is a set, year is 4 digit string 'YYYY'
 
-    # input validation
+    # Input validation
     if len(dois) == 0:
         return 'Please insert a valid set of DOIs'
     if type(year) == int:
@@ -46,12 +46,16 @@ def do_compute_impact_factor(data, dois, year):  # DOIs is a set, year is 4 digi
     num = 0  # numerator for the final computation
     denom = 0  # denominator for the final computation
 
-    # selecting only citations by documents published in year 'year'
+    # Selecting only rows where 'creation' is equal to 'year'
     data_year = data.loc[data['creation'].dt.year == int(year)]
 
-    # selecting only citations with previous two years: concatenate
-    data_previous_two_years = pandas.concat(
-        [data.loc[data['creation'].dt.year == (int(year) - 1)], data.loc[data['creation'].dt.year == (int(year) - 2)]])
+    # Selecting only citations created in the previous two years:
+        # concatenate dataframes with 'creation' == (y-1 or y-2)
+    data_previous_two_years = pandas.concat([data.loc[data['creation'].dt.year == (int(year) - 1)], data.loc[data['creation'].dt.year == (int(year) - 2)]])
+        # create new column for creation date of the cited articles through ancillary function
+    data_previous_two_years['creation_cited'] = data_previous_two_years[['cited', 'creation', 'timespan']].apply(do_compute_date_column, axis=1)
+        # filter out cited articles outside of (y-1 or y-2)
+    data_previous_two_years.drop(data_previous_two_years[~data_previous_two_years['creation_cited'].isin([int(year)-1, int(year)-2])].index, inplace=True)
 
     for doi in dois:
         # selecting rows with doi == cited and adding the length of this table to num
