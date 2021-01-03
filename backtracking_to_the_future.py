@@ -20,54 +20,46 @@
 # https://comp-think.github.io/2020-2021/slides/14%20-%20Project.html
 
 
-import csv
-import pprint
+import pandas
+
+pandas.set_option('display.max_columns', 5)
+pandas.set_option('display.width', 800)
 
 def process_citations(citations_file_path):
-    result = []
-    with open(citations_file_path, newline="") as filecsv:
-        reader = csv.reader(filecsv, delimiter=",")
-        next(reader)
-        for row in reader:
-            result.append(row)
+    data_frame = pandas.read_csv(citations_file_path, dtype={'citing': str, 'cited': str, 'timespan': str},
+                                 parse_dates=['creation'])
+    return data_frame
 
-    return result
-
-
-data = process_citations(r"./citations.csv")
-pprint.pprint(data)
-
+dataframe = process_citations(r"./citations_sample.csv")
+print(dataframe)
 
 def do_compute_impact_factor(data,dois,year):
-    num = 0
-    denom = set()
-    yearr = int(year)
-
-    for line in data:
-        for doi in dois:
-            if doi == line[1] and year == line[2][:4]:
-                num += 1
-
-            if doi == line[0] and line[2][:4] == str(yearr -1) or line[2][:4] == str(yearr -2):
-                    denom.add(doi)
-
-    print(num)
-    print(denom)
-    print(len(denom))
-
-    return num/len(denom)
-
-data=process_citations(r"./citations.csv")
-dois={'10.3389/fpsyg.2016.01483', '10.1097/mop.0000000000000929', '10.1177/000313481107700711','10.3414/me14-05-0004','10.3928/01477447-20180123-06','10.1002/ddr.21369','10.3889/mmej.2015.50002','10.1016/s0140-6736(97)11096-0'}
-year=str(2016)
-
-print(do_compute_impact_factor(data,dois,year))
+    pass
 
 def do_get_co_citations(data, doi1, doi2):
     pass
 
-def do_get_bibliographic_coupling(data, doi1, doi2):
-    pass
+#It returns an integer defining how many times the two input documents cite both the same document.
+def do_get_bibliographic_coupling(data, doi1,doi2):
+    if doi1 == doi2:
+        return "Please change one of the DOIs inserted."
+    data_doi1_doi2 = data[['citing', 'cited']].loc[data['citing'].isin([doi1,doi2])]
+    print(data_doi1_doi2)
+    less_duplicate = data_doi1_doi2.drop_duplicates(subset=['cited'])
+    if len(data_doi1_doi2) == len(less_duplicate):
+        return "The doi1 and the doi2 don't cite both the same document."
+    else:
+        return len(data_doi1_doi2) - len(less_duplicate)
+
+data = process_citations(r"./citations_sample.csv")
+#doi1 = '10.1007/978-3-319-93293-4_2'
+#doi2 = '10.3390/vaccines8040600'
+#OUTPUT : The doi1 and the doi2 don't cite both the same document.
+
+doi1 = '10.1007/978-3-319-93293-4_2'
+doi2 = '10.1007/978-3-319-93224-8_30'
+#OUTPUT: 1
+print(do_get_bibliographic_coupling(data,doi1,doi2))
 
 def do_get_citation_network(data, start, end):
     pass
