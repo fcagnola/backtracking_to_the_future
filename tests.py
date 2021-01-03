@@ -161,6 +161,7 @@ def do_search(data, query, field):
 
         #creates a list with all the operators from left to right
         found = re.findall(r'\sand\s|\sor\s', query)
+        print(found)
 
         #if the first one is an 'and'
         if found[0] == ' and ':
@@ -189,9 +190,10 @@ def do_search(data, query, field):
             #how = 'outer' uses the union of keys from both Dataframes. Attention: the keys are not mainained
             return left.merge(right, how='outer')
 
-# print(do_search(citations_pandas, 2, 'citing'))
-# print(do_search(citations_pandas, 'hello', 'cit'))
-# print("Doing the search for '-01 and not 2008' :\n", do_search(citations_pandas, '-01 and not 2008', 'creation'))
+print(do_search(citations_pandas, 2, 'citing'))
+print(do_search(citations_pandas, 'hello', 'cit'))
+print(do_search(citations_pandas, 'ArcHdischIld', 'citing'))
+print("Doing the search for '-01 and not 2008' :\n", do_search(citations_pandas, '-01 and not 2008', 'creation'))
 print("Doing the search for '2007 or not 2008 and -01 or -02' :\n", do_search(citations_pandas, '2007 or not 2008 and -01 or -02', 'creation'))
 print("Doing the search for '10.1057*biosoc' :\n", do_search(citations_pandas, '10.1057*biosoc', 'citing'))
 print("Doing the search for '01461672 and 115' :\n", do_search(citations_pandas, '01461672 and 115', 'cited'))
