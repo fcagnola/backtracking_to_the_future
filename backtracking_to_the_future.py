@@ -83,20 +83,21 @@ def do_get_citation_network(data, start, end):  # F
     if int(end) < int(start):
         return "Invalid input: enter an end year greater than the start"
 
-    # filter data on given time window start->end
-    i = int(start)  # iterator, set as ==start, then 1 is added each iter until 'end' is reached
+    timewindow = [year for year in range(start, end+1)] # list comprehension, list with all years of timewindow
+
+    # 1. Filter data on given time window start->end (using 'creation' column)
     ls_dfs = []  # list will contain dataframes for each year in time window
-    while i != (int(end) + 1):
+    for i in timewindow:
         ls_dfs.append(data[data['creation'].dt.year == i])  # add only rows with creation year == iterator
         i += 1  # increment iterator
-
-    # concatenate dataframes, create dataframe for whole timewindow (start>end)
     d = pandas.concat(ls_dfs)
-    # compute a 'creation_cited' column with dates for the cited DOIs, through ancillary function
-    d['creation_cited'] = d[['cited', 'creation', 'timespan']].apply(do_compute_date_column, axis=1)
-    # NEED TO REMOVE DOIs WHICH HAVE CREATION CITED VALUE != TIMEWINDOW START-END
 
-    # create actual Directed Network through networkx
+    # 2. Compute a 'creation_cited' column with dates for the cited DOIs, through ancillary function
+    d['creation_cited'] = d[['cited', 'creation', 'timespan']].apply(do_compute_date_column, axis=1)
+    # Remove DOIs with creation_cited != timewindow:
+    d.drop(d[~d['creation_cited'].isin(timewindow)].index, inplace=True) # filter data and feed index to drop method
+
+    # 3. Create Directed Network through networkx
     graph = from_pandas_edgelist(d, source='citing', target='cited', create_using=DiGraph)
 
     return graph
