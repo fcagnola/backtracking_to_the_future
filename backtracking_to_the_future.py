@@ -28,9 +28,10 @@ pandas.set_option('display.max_columns', 5)
 pandas.set_option('display.width', 800)
 
 
-def process_citations(citations_file_path):
+def process_citations(citations_file_path):  # years in 'YYYY' format should be 'YYYY-01-05'
     # processing through pandas' read.csv function: date parsing is necessary for easier handling of 'creation' column
-    data_frame = pandas.read_csv(citations_file_path, dtype={'citing': str, 'cited': str, 'timespan': str}, parse_dates=['creation'])
+    data_frame = pandas.read_csv(citations_file_path, dtype={'citing': str, 'cited': str, 'timespan': str},
+                                 parse_dates=['creation'])
     return data_frame
 
 
@@ -42,14 +43,15 @@ def do_compute_impact_factor(data, dois, year):  # DOIs is a set, year is 4 digi
     if type(year) == int:
         return 'Please provide a year in string format: "YYYY"'
 
-    num = 0         # numerator for the final computation
-    denom = 0       # denominator for the final computation
+    num = 0  # numerator for the final computation
+    denom = 0  # denominator for the final computation
 
     # selecting only citations by documents published in year 'year'
     data_year = data.loc[data['creation'].dt.year == int(year)]
 
     # selecting only citations with previous two years: concatenate
-    data_previous_two_years = pandas.concat([data.loc[data['creation'].dt.year == (int(year) - 1)], data.loc[data['creation'].dt.year == (int(year) - 2)]])
+    data_previous_two_years = pandas.concat(
+        [data.loc[data['creation'].dt.year == (int(year) - 1)], data.loc[data['creation'].dt.year == (int(year) - 2)]])
 
     for doi in dois:
         # selecting rows with doi == cited and adding the length of this table to num
@@ -82,11 +84,11 @@ def do_get_citation_network(data, start, end):  # F
         return "Invalid input: enter an end year greater than the start"
 
     # filter data on given time window start->end
-    i = int(start)      # iterator, set as ==start, then 1 is added each iter until 'end' is reached
-    ls_dfs = []         # list will contain dataframes for each year in time window
+    i = int(start)  # iterator, set as ==start, then 1 is added each iter until 'end' is reached
+    ls_dfs = []  # list will contain dataframes for each year in time window
     while i != (int(end) + 1):
         ls_dfs.append(data[data['creation'].dt.year == i])  # add only rows with creation year == iterator
-        i += 1                                              # increment iterator
+        i += 1  # increment iterator
 
     # concatenate dataframes, create dataframe for whole timewindow (start>end)
     d = pandas.concat(ls_dfs)
@@ -122,35 +124,44 @@ def do_filter_by_value(data, query, field):
     pass
 
 
-def do_compute_date_column(row):  # this function takes a pd.Series as input (row of a pd.DataFrame)
+date_dict = dict()  # this variable will store do_compute_date_column results for future use
 
-    timespan = row['timespan']    # the elem at index 'timespan' is the timespan in 'P_Y_M_D' format
-    creation = row['creation']    # the elem at index 'creation' is the date of creation in 'YYYY-MM-DD' format
+def do_compute_date_column(row):  # input is always pd.Series (row of a pd.DataFrame)
 
-    negative = False              # timespan could be negative, in that case the computation should be reversed
-    if timespan[0] == "-":
-        negative = True
+    global date_dict                     # allows to use global variable inside a function
+    timespan = row['timespan']           # elem at index 'timespan' of the series is the timespan in 'P_Y_M_D' format
+    date_column_value = row['creation']  # elem at index 'creation' is the date of creation in 'YYYY-MM-DD' format
+    # date_column_value will also be the return value: computed creation time for cited DOI
 
-    timespan = timespan.strip('PD')     # i remove the 'P' at the beginning and the 'D' at the end of the timespan
-    ls = re.split('[YM]', timespan)     # then a list is created in [yy, mm, dd] format
+    if row['cited'] in date_dict:        # base case: result already computed and in global dict
+        date_column_value = date_dict[row['cited']]
+        return date_column_value.date().year
 
-    date_column_value = creation        # this will be the return value: computed creation time for cited DOI
-    if not negative:
-        for idx, value in enumerate(ls):    # loop through elements in the list (there could be YY, YY-MM or YY-MM-DD)
-            if idx == 0:                    # first elem will always be year: compute year by subtraction
-                date_column_value = date_column_value - np.timedelta64(value, 'Y')
-            elif idx == 1 and value != '':  # second elem will always be month: compute month by subtraction
-                date_column_value = date_column_value - np.timedelta64(value, 'M')
-            elif idx == 2 and value != '':  # third elem will always be day: compute day by subtraction
-                date_column_value = date_column_value - np.timedelta64(value, 'D')
-    else:
-        for idx, value in enumerate(ls):    # loop through elements in the list (there could only be YY or YY-MM)!
-            if idx == 0:                    # first elem will always be year: compute year by subtraction
-                date_column_value = date_column_value + np.timedelta64(value, 'Y')
-            elif idx == 1 and value != '':  # second elem will always be month: compute month by subtraction
-                date_column_value = date_column_value + np.timedelta64(value, 'M')
-            elif idx == 2 and value != '':  # third elem will always be day: compute day by subtraction
-                date_column_value = date_column_value + np.timedelta64(value, 'D')
+    else:                                # computation and storage for future use in the global dict
 
-    return date_column_value.date()  # .year only returns the year, could be wise since it is not a perfect computation
+        negative = False                 # timespan is assumed to be positive
+        if timespan[0] == "-":
+            negative = True              # if negative, the appropriate variable will show that
 
+        timespan = timespan.strip('PD')  # remove the 'P' at the beginning and the 'D' at the end of 'timespan'
+        ls = re.split('[YM]', timespan)  # create a list in [yy, mm, dd] format for easier handling
+
+        if not negative:                 # 1. Timespan is POSITIVE: compute by subtraction
+            for idx, value in enumerate(ls):  # loop through elements in list 'ls' (could be YY, YY-MM or YY-MM-DD)
+                if idx == 0:                    # first elem is always year: compute year
+                    date_column_value = date_column_value - np.timedelta64(value, 'Y')
+                elif idx == 1 and value != '':  # second elem is always month: compute month
+                    date_column_value = date_column_value - np.timedelta64(value, 'M')
+                elif idx == 2 and value != '':  # third elem is always day: compute day
+                    date_column_value = date_column_value - np.timedelta64(value, 'D')
+
+        else:                            # 2. Timespan is NEGATIVE: compute by addition
+            for idx, value in enumerate(ls):  # loop through elements in list 'ls' (could be YY, YY-MM or YY-MM-DD)
+                if idx == 0:                    # first elem is always year: compute year
+                    date_column_value = date_column_value + np.timedelta64(value, 'Y')
+                elif idx == 1 and value != '':  # second elem is always month: compute month
+                    date_column_value = date_column_value + np.timedelta64(value, 'M')
+                elif idx == 2 and value != '':  # third elem is always day: compute day
+                    date_column_value = date_column_value + np.timedelta64(value, 'D')
+        date_dict[row['cited']] = date_column_value.date().year
+        return date_column_value.date().year
