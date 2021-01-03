@@ -133,6 +133,11 @@ def do_compute_date_column(row):  # input is always pd.Series (row of a pd.DataF
     date_column_value = row['creation']  # elem at index 'creation' is the date of creation in 'YYYY-MM-DD' format
     # date_column_value will also be the return value: computed creation time for cited DOI
 
+    if len(str(date_column_value)) == 4:      # if creation is only a year, add 5 days to avoid weird calculations
+        print(date_column_value)
+        date_column_value += '-01-05'
+        print(date_column_value)
+
     if row['cited'] in date_dict:        # base case: result already computed and in global dict
         date_column_value = date_dict[row['cited']]
         return date_dict[row['cited']]
