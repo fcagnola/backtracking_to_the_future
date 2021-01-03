@@ -16,7 +16,8 @@
 # import the class 'BibliometricEngine' from the local file 'bibengine.py'
 from bibengine import BibliometricEngine
 
-#testing file: /Users/federicocagnola/Desktop/testing_csv.csv
+#testing files: /Users/federicocagnola/Desktop/testing_csv.csv OR citations_sample.csv
+
 # create a new object of the class 'BibliometricEngine' specifying the input CSV files to process
 my_be = BibliometricEngine('citations_sample.csv')
 
