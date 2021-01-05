@@ -132,7 +132,7 @@ def do_filter_by_value(data, query, field):
 date_dict = dict()  # this variable will store do_compute_date_column results for future use
 
 def do_compute_date_column(row):  # input is always pd.Series (row of a pd.DataFrame)
-
+    # DEBUG: FUNCTION WAS TESTED WITH MULTIPLE DATE FORMATS AND APPEARS TO BE WORKING CORRECTLY
     global date_dict                     # allows to use global variable inside a function
     timespan = row['timespan']           # elem at index 'timespan' of the series is the timespan in 'P_Y_M_D' format
     date_column_value = row['creation']  # elem at index 'creation' is the date of creation in 'YYYY-MM-DD' format
