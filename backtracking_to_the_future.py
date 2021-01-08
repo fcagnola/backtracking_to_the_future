@@ -43,19 +43,25 @@ def do_compute_impact_factor(data, dois, year):  # DOIs is a set, year is 4 digi
     if type(year) == int:
         return 'Please provide a year in string format: "YYYY"'
 
-    num = 0  # numerator for the final computation
-    denom = 0  # denominator for the final computation
+    num = 0        # numerator for the final computation
+    denom = set()  # denominator for the final computation
 
     # Selecting only rows where 'creation' is equal to 'year'
     data_year = data.loc[data['creation'].dt.year == int(year)]
+    print('DEBUG: data_year is == {}'.format(data_year))
 
     # Selecting only citations created in the previous two years:
-        # concatenate dataframes with 'creation' == (y-1 or y-2)
-    data_previous_two_years = pandas.concat([data.loc[data['creation'].dt.year == (int(year) - 1)], data.loc[data['creation'].dt.year == (int(year) - 2)]])
-        # create new column for creation date of the cited articles through ancillary function
-    data_previous_two_years['creation_cited'] = data_previous_two_years[['cited', 'creation', 'timespan']].apply(do_compute_date_column, axis=1)
-        # filter out cited articles outside of (y-1 or y-2)
-    data_previous_two_years.drop(data_previous_two_years[~data_previous_two_years['creation_cited'].isin([int(year)-1, int(year)-2])].index, inplace=True)
+    # a. concatenate dataframes with 'creation' == (y-1 or y-2) and reset index to be able to use integer positioning
+    data_previous_two_years = pandas.concat([data.loc[data['creation'].dt.year == (int(year) - 1)], data.loc[data['creation'].dt.year == (int(year) - 2)]], ignore_index=True)
+
+    # b. create new column for creation date of the cited articles through ancillary function
+    if len(data_previous_two_years) != 0: # prevents value and key errors
+        new_date_column = data_previous_two_years[['cited', 'creation', 'timespan']].apply(do_compute_date_column, axis=1)
+        data_previous_two_years['creation_cited'] = new_date_column.values
+    print('DEBUG: data_prev_two_years is == {}'.format(data_previous_two_years))
+
+    # c. filter out cited articles outside of (y-1 or y-2)
+    #data_previous_two_years.drop(data_previous_two_years[~data_previous_two_years['creation_cited'].isin([int(year)-1, int(year)-2])].index, inplace=True)
 
     for doi in dois:
         # selecting rows with doi == cited and adding the length of this table to num
@@ -64,10 +70,14 @@ def do_compute_impact_factor(data, dois, year):  # DOIs is a set, year is 4 digi
 
         # selecting rows with doi == citing and adding the length of this table to denom
         data_previous_years_citing = data_previous_two_years.loc[data_previous_two_years['citing'] == doi]
-        denom += len(data_previous_years_citing)
+        if len(data_previous_years_citing) != 0:
+            denom.add(data_previous_years_citing['citing'].iloc[0])
 
+    print('DEBUG: num={}, denom={}'.format(num, len(denom)))
+    if num == 0:
+        return("Could not compute impact factor: no DOIs received citations in {}. \nPlease try with another input year or set".format(year))
     try:
-        return round(num / denom, 2)
+        return round(num / len(denom), 2)
     except ZeroDivisionError:
         return "Could not compute impact factor: no DOIs pointed to objects published in \n" \
                "year-1 or year-2. Please try with another input set or year."
@@ -131,20 +141,18 @@ def do_filter_by_value(data, query, field):
 
 date_dict = dict()  # this variable will store do_compute_date_column results for future use
 
+
 def do_compute_date_column(row):  # input is always pd.Series (row of a pd.DataFrame)
-    # DEBUG: FUNCTION WAS TESTED WITH MULTIPLE DATE FORMATS AND APPEARS TO BE WORKING CORRECTLY
+
     global date_dict                     # allows to use global variable inside a function
     timespan = row['timespan']           # elem at index 'timespan' of the series is the timespan in 'P_Y_M_D' format
     date_column_value = row['creation']  # elem at index 'creation' is the date of creation in 'YYYY-MM-DD' format
-    # date_column_value will also be the return value: computed creation time for cited DOI
 
-    if len(str(date_column_value)) == 4:      # if creation is only a year, add 5 days to avoid weird calculations
-        print(date_column_value)
-        date_column_value += '-01-05'
-        print(date_column_value)
+    # if creation is only a year, add a few days to avoid weird calculations
+    if str(date_column_value)[4:] == '-01-01 00:00:00':
+        date_column_value = date_column_value + np.timedelta64('10', 'D')
 
     if row['cited'] in date_dict:        # base case: result already computed and in global dict
-        date_column_value = date_dict[row['cited']]
         return date_dict[row['cited']]
 
     else:                                # computation and storage for future use in the global dict
@@ -174,5 +182,5 @@ def do_compute_date_column(row):  # input is always pd.Series (row of a pd.DataF
                 elif idx == 2 and value != '':  # third elem is always day: compute day
                     date_column_value = date_column_value + np.timedelta64(value, 'D')
 
-        date_dict[row['cited']] = date_column_value.date().year   # store result for future use
+        date_dict[row['cited']] = date_column_value.date().year   # store result for future use, to speed up processing
         return date_dict[row['cited']]
