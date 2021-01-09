@@ -46,26 +46,27 @@ def do_compute_impact_factor(data, dois, year):  # DOIs is a set, year is 4 digi
     num = 0        # numerator for the final computation
     denom = set()  # denominator for the final computation
 
-    # Selecting only rows where 'creation' is equal to 'year'
-    data_year = data.loc[data['creation'].dt.year == int(year)]
-    print('DEBUG: data_year is == {}'.format(data_year))
+    # Selecting all rows where 'creation' is equal to 'year'
+    data_year = data.loc[data['creation'].dt.year == int(year)] # IF EMPTY SHOULD RETURN 0, SINCE NUM WILL BE 0, TO AVOID UNNECESSARY COMPUTATION
+    #print('DEBUG: data_year is_______________ \n{}'.format(data_year))
 
     # Selecting only citations created in the previous two years:
     # a. concatenate dataframes with 'creation' == (y-1 or y-2) and reset index to be able to use integer positioning
     data_previous_two_years = pandas.concat([data.loc[data['creation'].dt.year == (int(year) - 1)], data.loc[data['creation'].dt.year == (int(year) - 2)]], ignore_index=True)
 
     # b. create new column for creation date of the cited articles through ancillary function
-    if len(data_previous_two_years) != 0: # prevents value and key errors
+    if len(data_previous_two_years) != 0:         # prevents value and key errors if there are no results
         new_date_column = data_previous_two_years[['cited', 'creation', 'timespan']].apply(do_compute_date_column, axis=1)
         data_previous_two_years['creation_cited'] = new_date_column.values
-    print('DEBUG: data_prev_two_years is == {}'.format(data_previous_two_years))
+    #print('DEBUG: data_prev_two_years is_______________ \n{}'.format(data_previous_two_years))
 
-    # c. filter out cited articles outside of (y-1 or y-2)
+    # c. add DOIs in set from 'cited' column created in y-1 and y-2
     #data_previous_two_years.drop(data_previous_two_years[~data_previous_two_years['creation_cited'].isin([int(year)-1, int(year)-2])].index, inplace=True)
 
     for doi in dois:
         # selecting rows with doi == cited and adding the length of this table to num
         data_year_cited = data_year.loc[data_year['cited'] == doi]
+        #print('DEBUG: table length will be num for {}: \n {}'.format(doi, data_year_cited))
         num += len(data_year_cited)
 
         # selecting rows with doi == citing and adding the length of this table to denom
