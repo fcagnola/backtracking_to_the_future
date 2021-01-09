@@ -23,7 +23,6 @@ import pandas
 from networkx import DiGraph, from_pandas_edgelist, compose
 import numpy as np
 import re
-
 pandas.set_option('display.max_columns', 5)
 pandas.set_option('display.width', 800)
 
@@ -37,35 +36,35 @@ def process_citations(citations_file_path):  # years in 'YYYY' format should be 
 
 def do_compute_impact_factor(data, dois, year):  # DOIs is a set, year is 4 digit string 'YYYY'
 
-    # Input validation
+    # Input validation: alternatively use isinstance(value, type)
     if len(dois) == 0:
         return 'Please insert a valid set of DOIs'
-    if type(year) == int:
+    if type(year) is int:
         return 'Please provide a year in string format: "YYYY"'
 
     num = 0        # numerator for the final computation
     denom = set()  # denominator for the final computation
 
-    # Selecting all rows where 'creation' is equal to 'year'
-    data_year = data.loc[data['creation'].dt.year == int(year)] # IF EMPTY SHOULD RETURN 0, SINCE NUM WILL BE 0, TO AVOID UNNECESSARY COMPUTATION
-    #print('DEBUG: data_year is_______________ \n{}'.format(data_year))
+    # Filter dataframe: all rows should have one of the DOIs in the 'citing' or 'cited' column
+    dois_in_cited = data[data['cited'].isin(dois)].reset_index()
+    dois_in_citing = data[data['citing'].isin(dois)]
+    dois_in_either = pandas.concat(data[data['citing'].isin(dois)], dois_in_cited)
+    # create new column for creation date of the cited articles through ancillary function
+    dois_in_either['creation_cited'] = dois_in_either[['cited', 'creation', 'timespan']].apply(do_compute_date_column, axis=1)
 
-    # Selecting only citations created in the previous two years:
-    # a. concatenate dataframes with 'creation' == (y-1 or y-2) and reset index to be able to use integer positioning
-    data_previous_two_years = pandas.concat([data.loc[data['creation'].dt.year == (int(year) - 1)], data.loc[data['creation'].dt.year == (int(year) - 2)]], ignore_index=True)
+    # Select all rows of DOIs cited in year 'year'
+    cited_in_year = dois_in_cited.loc[dois_in_cited['creation'].dt.year == int(year)] # IF EMPTY SHOULD RETURN 0, SINCE NUM WILL BE 0, TO AVOID UNNECESSARY COMPUTATION
+    num = len(cited_in_year) # collapse into one line, num = len(...........)
 
-    # b. create new column for creation date of the cited articles through ancillary function
-    if len(data_previous_two_years) != 0:         # prevents value and key errors if there are no results
-        new_date_column = data_previous_two_years[['cited', 'creation', 'timespan']].apply(do_compute_date_column, axis=1)
-        data_previous_two_years['creation_cited'] = new_date_column.values
-    #print('DEBUG: data_prev_two_years is_______________ \n{}'.format(data_previous_two_years))
-
-    # c. add DOIs in set from 'cited' column created in y-1 and y-2
-    #data_previous_two_years.drop(data_previous_two_years[~data_previous_two_years['creation_cited'].isin([int(year)-1, int(year)-2])].index, inplace=True)
+    # Filtering for DOIs created in the previous two years:
+    # concatenate dataframes with 'creation' == (y-1 or y-2) in 'creation' or 'creation_cited' column and reset index
+    y_1_2_citing = pandas.concat(dois_in_either.loc['creation'].dt.year == (int(year) - 1), dois_in_either.loc['creation'].dt.year == (int(year) - 2))
+    y_1_2_cited = pandas.concat(dois_in_either.loc['creation_cited'].dt.year == (int(year) - 1), dois_in_either.loc['creation_cited'].dt.year == (int(year) - 2))
+    data_previous_two_years = pandas.concat(y_1, y_2, ignore_index=True)
 
     for doi in dois:
         # selecting rows with doi == cited and adding the length of this table to num
-        data_year_cited = data_year.loc[data_year['cited'] == doi]
+        data_year_cited = cited_in_year.loc[cited_in_year['cited'] == doi]
         #print('DEBUG: table length will be num for {}: \n {}'.format(doi, data_year_cited))
         num += len(data_year_cited)
 
