@@ -78,8 +78,12 @@ def do_search_by_prefix(data, prefix, is_citing):
     else:
         field = 'cited'
 
-    #returning a subcollection of the data where the query on the right field is true
-    return data[data[field].str.count(query)>0]
+    filtered_data = data[data[field].str.count(query)>0]
+    if len(filtered_data) == 0:
+        return "The input prefix cannot be found. Please insert a new one."
+    else:
+        #returning a subcollection of the data where the query on the right field is true
+        return filtered_data
 
 print(do_search_by_prefix(cit_pandas_dates, '10.3390', True))
 print(do_search_by_prefix(cit_pandas_dates, '10.1016', False))
