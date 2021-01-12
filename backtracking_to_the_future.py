@@ -44,7 +44,7 @@ def do_compute_impact_factor(data, dois, year):  # DOIs is a set, year is 4 digi
 
     # Create variables for the final computation: numerator and denominator
     num = 0
-    denom = set()
+    denom = 0
 
     # Filter dataframe: all rows that have one of the DOIs in the 'citing' or 'cited' column
     dois_in_cited = data[data['cited'].isin(dois)].reset_index(drop=True)
@@ -52,35 +52,23 @@ def do_compute_impact_factor(data, dois, year):  # DOIs is a set, year is 4 digi
     dois_in_either = pandas.concat([dois_in_cited, dois_in_citing]).drop_duplicates().reset_index(drop=True)
 
     # Create new column for creation date of the cited articles through ancillary function
-    dois_in_either['creation_cited'] = dois_in_either[['cited', 'creation', 'timespan']].apply(do_compute_date_column, axis=1)
+    dois_in_cited['creation_cited'] = dois_in_cited[['cited', 'creation', 'timespan']].apply(do_compute_date_column, axis=1)
 
     # Select all rows of DOIs cited in year 'year'
-    cited_in_year = dois_in_cited.loc[dois_in_cited['creation'].dt.year == int(year)]
-    # IF EMPTY WE SHOULD RETURN 0 MAYBE, SINCE NUM WILL BE 0, TO AVOID UNNECESSARY COMPUTATION!!
-    num = len(cited_in_year) # could collapse into one line, num = len(dois_in_cited.loc[...........)
+    num = len(dois_in_cited.loc[dois_in_cited['creation'].dt.year == int(year)])
+    if num == 0:    # avoid unnecessary computations if numerator is equal to 0: return error right away
+        return ("Could not compute impact factor: no DOIs received citations in {}. \nPlease try with another input year or set".format(year))
 
     # Filtering for DOIs created in the previous two years:
     #   concatenate dataframes with (y-1 or y-2) in 'creation' or 'creation_cited' column and reset index
-    y_1_2_citing = pandas.concat(dois_in_either.loc['creation'].dt.year == (int(year) - 1), dois_in_either.loc['creation'].dt.year == (int(year) - 2))
-    y_1_2_cited = pandas.concat(dois_in_either.loc['creation_cited'].dt.year == (int(year) - 1), dois_in_either.loc['creation_cited'].dt.year == (int(year) - 2))
-    data_previous_two_years = pandas.concat(y_1_2_cited, y_1_2_citing, ignore_index=True)
+    y_1_2_citing = dois_in_citing.loc[(dois_in_citing['creation'].dt.year == (int(year) - 1)) | (dois_in_citing['creation'].dt.year == (int(year) - 2))]
+    y_1_2_cited = dois_in_cited.loc[(dois_in_cited['creation_cited'] == (int(year) - 1)) | (dois_in_cited['creation_cited'] == (int(year) - 2))]
+    print((y_1_2_cited['cited'].unique()), (y_1_2_citing['citing'].unique()))
+    denom = len((y_1_2_cited['cited'].unique())) + len((y_1_2_citing['citing'].unique()))
 
-    for doi in dois:
-        # selecting rows with doi == cited and adding the length of this table to num
-        data_year_cited = cited_in_year.loc[cited_in_year['cited'] == doi]
-        #print('DEBUG: table length will be num for {}: \n {}'.format(doi, data_year_cited))
-        num += len(data_year_cited)
-
-        # selecting rows with doi == citing and adding the length of this table to denom
-        data_previous_years_citing = data_previous_two_years.loc[data_previous_two_years['citing'] == doi]
-        if len(data_previous_years_citing) != 0:
-            denom.add(data_previous_years_citing['citing'].iloc[0])
-
-    print('DEBUG: num={}, denom={}'.format(num, len(denom)))
-    if num == 0:
-        return("Could not compute impact factor: no DOIs received citations in {}. \nPlease try with another input year or set".format(year))
+    print('DEBUG: num={}, denom={}'.format(num, denom))
     try:
-        return round(num / len(denom), 2)
+        return round(num / denom, 2)
     except ZeroDivisionError:
         return "Could not compute impact factor: no DOIs pointed to objects published in \n" \
                "year-1 or year-2. Please try with another input set or year."
@@ -169,20 +157,20 @@ def do_compute_date_column(row):  # input is always pd.Series (row of a pd.DataF
 
         if not negative:                 # 1. Timespan is POSITIVE: compute by subtraction
             for idx, value in enumerate(ls):  # loop through elements in list 'ls' (could be YY, YY-MM or YY-MM-DD)
-                if idx == 0:                    # first elem is always year: compute year
+                if idx == 0:                    # first elem is year: compute year
                     date_column_value = date_column_value - np.timedelta64(value, 'Y')
-                elif idx == 1 and value != '':  # second elem is always month: compute month
+                elif idx == 1 and value != '':  # second elem is month: compute month
                     date_column_value = date_column_value - np.timedelta64(value, 'M')
-                elif idx == 2 and value != '':  # third elem is always day: compute day
+                elif idx == 2 and value != '':  # third elem is day: compute day
                     date_column_value = date_column_value - np.timedelta64(value, 'D')
 
         else:                            # 2. Timespan is NEGATIVE: compute by addition
             for idx, value in enumerate(ls):  # loop through elements in list 'ls' (could be YY, YY-MM or YY-MM-DD)
-                if idx == 0:                    # first elem is always year: compute year
+                if idx == 0:                    # first elem is year: compute year
                     date_column_value = date_column_value + np.timedelta64(value, 'Y')
-                elif idx == 1 and value != '':  # second elem is always month: compute month
+                elif idx == 1 and value != '':  # second elem is month: compute month
                     date_column_value = date_column_value + np.timedelta64(value, 'M')
-                elif idx == 2 and value != '':  # third elem is always day: compute day
+                elif idx == 2 and value != '':  # third elem is day: compute day
                     date_column_value = date_column_value + np.timedelta64(value, 'D')
 
         date_dict[row['cited']] = date_column_value.date().year   # store result for future use, to speed up processing
