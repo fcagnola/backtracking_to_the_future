@@ -42,25 +42,28 @@ def do_compute_impact_factor(data, dois, year):  # DOIs is a set, year is 4 digi
     if type(year) is int:
         return 'Please provide a year in string format: "YYYY"'
 
-    num = 0        # numerator for the final computation
-    denom = set()  # denominator for the final computation
+    # Create variables for the final computation: numerator and denominator
+    num = 0
+    denom = set()
 
-    # Filter dataframe: all rows should have one of the DOIs in the 'citing' or 'cited' column
-    dois_in_cited = data[data['cited'].isin(dois)].reset_index()
-    dois_in_citing = data[data['citing'].isin(dois)]
-    dois_in_either = pandas.concat(data[data['citing'].isin(dois)], dois_in_cited)
-    # create new column for creation date of the cited articles through ancillary function
+    # Filter dataframe: all rows that have one of the DOIs in the 'citing' or 'cited' column
+    dois_in_cited = data[data['cited'].isin(dois)].reset_index(drop=True)
+    dois_in_citing = data[data['citing'].isin(dois)].reset_index(drop=True)
+    dois_in_either = pandas.concat([dois_in_cited, dois_in_citing]).drop_duplicates().reset_index(drop=True)
+
+    # Create new column for creation date of the cited articles through ancillary function
     dois_in_either['creation_cited'] = dois_in_either[['cited', 'creation', 'timespan']].apply(do_compute_date_column, axis=1)
 
     # Select all rows of DOIs cited in year 'year'
-    cited_in_year = dois_in_cited.loc[dois_in_cited['creation'].dt.year == int(year)] # IF EMPTY SHOULD RETURN 0, SINCE NUM WILL BE 0, TO AVOID UNNECESSARY COMPUTATION
-    num = len(cited_in_year) # collapse into one line, num = len(...........)
+    cited_in_year = dois_in_cited.loc[dois_in_cited['creation'].dt.year == int(year)]
+    # IF EMPTY WE SHOULD RETURN 0 MAYBE, SINCE NUM WILL BE 0, TO AVOID UNNECESSARY COMPUTATION!!
+    num = len(cited_in_year) # could collapse into one line, num = len(dois_in_cited.loc[...........)
 
     # Filtering for DOIs created in the previous two years:
-    # concatenate dataframes with 'creation' == (y-1 or y-2) in 'creation' or 'creation_cited' column and reset index
+    #   concatenate dataframes with (y-1 or y-2) in 'creation' or 'creation_cited' column and reset index
     y_1_2_citing = pandas.concat(dois_in_either.loc['creation'].dt.year == (int(year) - 1), dois_in_either.loc['creation'].dt.year == (int(year) - 2))
     y_1_2_cited = pandas.concat(dois_in_either.loc['creation_cited'].dt.year == (int(year) - 1), dois_in_either.loc['creation_cited'].dt.year == (int(year) - 2))
-    data_previous_two_years = pandas.concat(y_1, y_2, ignore_index=True)
+    data_previous_two_years = pandas.concat(y_1_2_cited, y_1_2_citing, ignore_index=True)
 
     for doi in dois:
         # selecting rows with doi == cited and adding the length of this table to num
