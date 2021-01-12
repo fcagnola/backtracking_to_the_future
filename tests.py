@@ -190,10 +190,26 @@ def do_search(data, query, field):
             #how = 'outer' uses the union of keys from both Dataframes. Attention: the keys are not mainained
             return left.merge(right, how='outer')
 
-print(do_search(citations_pandas, 2, 'citing'))
-print(do_search(citations_pandas, 'hello', 'cit'))
-print(do_search(citations_pandas, 'ArcHdischIld', 'citing'))
-print("Doing the search for '-01 and not 2008' :\n", do_search(citations_pandas, '-01 and not 2008', 'creation'))
-print("Doing the search for '2007 or not 2008 and -01 or -02' :\n", do_search(citations_pandas, '2007 or not 2008 and -01 or -02', 'creation'))
-print("Doing the search for '10.1057*biosoc' :\n", do_search(citations_pandas, '10.1057*biosoc', 'citing'))
-print("Doing the search for '01461672 and 115' :\n", do_search(citations_pandas, '01461672 and 115', 'cited'))
+# print(do_search(citations_pandas, 2, 'citing'))
+# print(do_search(citations_pandas, 'hello', 'cit'))
+# print(do_search(citations_pandas, 'ArcHdischIld', 'citing'))
+# print("Doing the search for '-01 and not 2008' :\n", do_search(citations_pandas, '-01 and not 2008', 'creation'))
+# print("Doing the search for '2007 or not 2008 and -01 or -02' :\n", do_search(citations_pandas, '2007 or not 2008 and -01 or -02', 'creation'))
+# print("Doing the search for '10.1057*biosoc' :\n", do_search(citations_pandas, '10.1057*biosoc', 'citing'))
+# print("Doing the search for '01461672 and 115' :\n", do_search(citations_pandas, '01461672 and 115', 'cited'))
+
+def do_search_by_prefix(data, prefix, is_citing):
+    #defining the query to do on the fields using Regex
+    query = prefix+'/.*'
+
+    #deciding on which field to do the query
+    if is_citing:
+        field = 'citing'
+    else:
+        field = 'cited'
+
+    #returning a subcollection of the data where the query on the right field is true
+    return data[data[field].str.count(query)>0]
+
+print(do_search_by_prefix(cit_pandas_dates, '10.3390', True))
+print(do_search_by_prefix(cit_pandas_dates, '10.1016', False))

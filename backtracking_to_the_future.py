@@ -24,6 +24,8 @@ def process_citations(citations_file_path):
     data_frame = pandas.read_csv(citations_file_path, dtype={'citing': str, 'cited': str, 'timespan': str}, parse_dates=['creation'])
     return data_frame
 
+cit_pandas_dates = process_citations('citations_sample.csv')
+
 def do_compute_impact_factor(data, dois, year):  # DOIs is a set, year is 4 digit string 'YYYY'
     if len(dois) == 0:
         return 'Please insert a valid set of DOIs'
@@ -67,7 +69,20 @@ def do_merge_graphs(data, g1, g2):
     pass
 
 def do_search_by_prefix(data, prefix, is_citing):
-    pass
+    #defining the query to do on the fields using Regex
+    query = prefix+'/.*'
+
+    #deciding on which field to do the query
+    if is_citing:
+        field = 'citing'
+    else:
+        field = 'cited'
+
+    #returning a subcollection of the data where the query on the right field is true
+    return data[data[field].str.count(query)>0]
+
+print(do_search_by_prefix(cit_pandas_dates, '10.3390', True))
+print(do_search_by_prefix(cit_pandas_dates, '10.1016', False))
 
 #the function is working, but can't be used with 'creation' as Date format, I have to find a way to deal with it
 def do_search(data, query, field):
@@ -140,9 +155,9 @@ def do_search(data, query, field):
             #This time the two recursions are done separately and joined in the return statement
             left = do_search(data, splitted[0], field)
             #The .join function is to treat a query with multiple 'or'
-            right = do_search(data, ' or ' .join(splitted[1:]), field)
+            right = do_search(data, ' or '.join(splitted[1:]), field)
 
-            #how = 'outer' uses the union of keys from both Dataframes. Attention: the keys are not mainained
+            #how = 'outer' uses the union of keys from both Dataframes. Attention: the keys are not maintained
             return left.merge(right, how='outer')
 
 print(do_search(citations_pandas, 2, 'citing'))

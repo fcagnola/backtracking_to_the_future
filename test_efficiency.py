@@ -160,7 +160,30 @@ def do_search(data, query, field):
 
             #how = 'outer' uses the union of keys from both Dataframes. Attention: the keys are not mainained
             return left.merge(right, how='outer')
+            
+def do_get_co_citations_consti(data, doi1, doi2):   #doi1 and doi2 are strings identifying 2 different 'cited' article
+    if doi1 == doi2:
+        return 'Please change one of the DOIs inserted'
+    data_doi1_doi2 = data[["citing","cited"]].loc[data['cited'].isin([doi1, doi2])]  # a Dataframe (with 2 columns) cointaining only the rows with doi1 and doi2 in 'cited' column
+    # if a 'citing' document is repeat twice that means it cites both doi1 and doi2 articles (which are the only taken into account by the 'data_doi1_doi2' DataFrame
+    data_duplicated_values = data_doi1_doi2[data_doi1_doi2.duplicated(subset=['citing'])]  #'drop_duplicate' removes duplicates on specific column(s) declared by 'subset'.
 
+    if len(data_duplicated_values)==0: #that means that 'drop_duplicates' did not find any duplicated value, so any co-citations
+        return "The doi1 and doi2 are never cited together by other documents"
+    else:
+        return len(data_duplicated_values) #detecting how many values (duplicated) have been removed
+
+def do_get_co_citations_lu(data, doi1, doi2):   #doi1 and doi2 are strings identifying 2 different 'cited' article
+    if doi1 == doi2:
+        return 'Please change one of the DOIs inserted'
+    data_doi1_doi2 = data[["citing","cited"]].loc[data['cited'].isin([doi1, doi2])]  # a Dataframe (with 2 columns) cointaining only the rows with doi1 and doi2 in 'cited' column
+    # if a 'citing' document is repeat twice that means it cites both doi1 and doi2 articles (which are the only taken into account by the 'data_doi1_doi2' DataFrame
+    data_less_duplicated_values = data_doi1_doi2.drop_duplicates(subset=['citing'])  #'drop_duplicate' removes duplicates on specific column(s) declared by 'subset'.
+
+    if len(data_doi1_doi2) == len(data_less_duplicated_values): #that means that 'drop_duplicates' did not find any duplicated value, so any co-citations
+        return "The doi1 and doi2 are never cited together by other documents"
+    else:
+        return len(data_doi1_doi2) - len(data_less_duplicated_values) #detecting how many values (duplicated) have been removed
 '''
 
 import timeit
@@ -186,12 +209,8 @@ def multipleniceevaluator(listoffunctions, setup, listofstatements, number=1000)
         print("Invalid input, the length of the lists you have put as input is different")
 
 
-l_statements = ['''process_citations_base("citations_sample.csv")''',
-                '''process_citations_pandas("citations_sample.csv")''',
-                '''process_citations_pandas_date("citations_sample.csv")''',
-                '''do_compute_impact_factor_pandas_two(cit_pandas_dates, {'10.3389/fpsyg.2016.01483','10.1097/mop.0000000000000929','10.1177/000313481107700711','10.3414/me14-05-0004','10.3928/01477447-20180123-06','10.1002/ddr.21369','10.3889/mmej.2015.50002','10.1016/s0140-6736(97)11096-0'}, '2016')''',
-                '''do_search(citations_pandas,'2007 or not 2008 and -01 or -02', 'creation')''']
-l_functions = ['process_citations_base()', 'process_citations_pandas()', 'process_citations_pandas_date()',  'do_compute_impact_factor_pandas_two()', 'do_search()']
+l_statements = ['''do_get_co_citations_consti(citations_pandas,"10.1177/2372732215600716", "10.1016/s0140-6736(97)11096-0") ''', '''do_get_co_citations_lu(citations_pandas,"10.1177/2372732215600716", "10.1016/s0140-6736(97)11096-0")''']
+l_functions = ['do_get_co_citations_consti()', 'do_get_co_citations_lu()']
 
 print(multipleniceevaluator(l_functions, setup, l_statements))
 
