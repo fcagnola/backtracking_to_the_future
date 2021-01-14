@@ -42,20 +42,16 @@ def do_compute_impact_factor(data, dois, year):  # DOIs is a set, year is 4 digi
     if type(year) is int:
         return 'Please provide a year in string format: "YYYY"'
 
-    # Create variables for the final computation: numerator and denominator
-    num = 0
-    denom = 0
-
     # Filter dataframe: all rows that have one of the DOIs in the 'citing' or 'cited' column
     dois_in_cited = data[data['cited'].isin(dois)].reset_index(drop=True)
     dois_in_citing = data[data['citing'].isin(dois)].reset_index(drop=True)
-    dois_in_either = pandas.concat([dois_in_cited, dois_in_citing]).drop_duplicates().reset_index(drop=True)
 
     # Create new column for creation date of the cited articles through ancillary function
     dois_in_cited['creation_cited'] = dois_in_cited[['cited', 'creation', 'timespan']].apply(do_compute_date_column, axis=1)
 
     # Select all rows of DOIs cited in year 'year'
-    num = len(dois_in_cited.loc[dois_in_cited['creation'].dt.year == int(year)])
+    table_num = dois_in_cited.loc[dois_in_cited['creation'].dt.year == int(year)]
+    num = len(table_num.citing.unique())
     if num == 0:    # avoid unnecessary computations if numerator is equal to 0: return error right away
         return ("Could not compute impact factor: no DOIs received citations in {}. \nPlease try with another input year or set".format(year))
 
@@ -63,15 +59,15 @@ def do_compute_impact_factor(data, dois, year):  # DOIs is a set, year is 4 digi
     #   concatenate dataframes with (y-1 or y-2) in 'creation' or 'creation_cited' column and reset index
     y_1_2_citing = dois_in_citing.loc[(dois_in_citing['creation'].dt.year == (int(year) - 1)) | (dois_in_citing['creation'].dt.year == (int(year) - 2))]
     y_1_2_cited = dois_in_cited.loc[(dois_in_cited['creation_cited'] == (int(year) - 1)) | (dois_in_cited['creation_cited'] == (int(year) - 2))]
-    print((y_1_2_cited['cited'].unique()), (y_1_2_citing['citing'].unique()))
-    denom = len((y_1_2_cited['cited'].unique())) + len((y_1_2_citing['citing'].unique()))
+    #   create sets of unique values for the two columns 'cited' and 'citing', and unite these sets (no duplicates)
+    denom1 = set(y_1_2_cited['cited'].unique())
+    denom2 = set(y_1_2_citing['citing'].unique())
+    denom = len(denom1.union(denom2))
+    if denom == 0:  # avoid ZeroDivisionError and handle case
+        return "Could not compute impact factor: no DOIs pointed to objects published in \nyear-1 or year-2. Please try with another input set or year."
 
-    print('DEBUG: num={}, denom={}'.format(num, denom))
-    try:
-        return round(num / denom, 2)
-    except ZeroDivisionError:
-        return "Could not compute impact factor: no DOIs pointed to objects published in \n" \
-               "year-1 or year-2. Please try with another input set or year."
+    # Return the result as a rounded numer to the 2nd decimal point
+    return round(num / denom, 2)
 
 
 def do_get_co_citations(data, doi1, doi2):
