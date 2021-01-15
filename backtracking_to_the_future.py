@@ -97,7 +97,7 @@ def do_search(data, query, field):
     if field not in data.columns:
         return 'Please provide a valid field for the data'
 
-    #base case: if there is no 'and' or 'or'
+    #base case: if there are no operators expcept 'not'
     if not re.search(r'(\sand\s|\sor\s)', query):
 
         #the search will be case insensitive
@@ -124,8 +124,15 @@ def do_search(data, query, field):
             print("There's a 'not'")
             print(result)
 
-            #selects only the rows where the statement is not true on the column 'field'
-            return data[data[field].str.count(result)==0]
+            if field == "creation":
+                return data[data[field].dt.strftime("%Y-%m-%d").str.count(result)==0]
+            else:
+                #selects only the rows where the statement is not true on the column 'field'
+                return data[data[field].str.count(result)==0]
+        elif field == "creation":
+            print(result)
+            return data[data[field].dt.strftime("%Y-%m-%d").str.count(result)>0]
+
         else:
             print(result)
             # else selects only the rows where the query returns true on the column 'field'
@@ -134,35 +141,34 @@ def do_search(data, query, field):
     #recursive cases: when there are some 'and' or 'or'
     else:
 
-        #creates a list with all the operators from left to right
-        found = re.findall(r'\sand\s|\sor\s', query)
-
-        #if the first one is an 'and'
-        if found[0] == ' and ':
-            print("there's an 'and'")
-
-            #splits the query in two and removes 'and'
-            splitted = query.split(' and ')
-
-            # in this line there are two recursions: the data provided to the second part of the query
-            # is the one returned by the call of this function on the first part.
-            # The .join function allows the query to have multiple 'and' inside and treats them one after the other.
-            return do_search(do_search(data, splitted[0], field), ' and '.join(splitted[1:]), field)
-
-        # if the first one is an 'or'
-        if found[0] == ' or ':
-            print("there's an 'or'")
+        # we first deal with or because in python 'and' has the priority: must be dealt with last
+        # for example: True or True and False = True or (True and False) = True or False = True
+        # an example for our data: x or y and z will be dealt as [x, y and z] first, to make sure that 'y and z' will be evaluated.
+        # otherwise, it would be (x or y) and z and we don't want that
+        if re.search(r'(\sor\s)', query):
 
             #splits the query in two and removes the 'or'
             splitted = query.split(' or ')
+            print("there's an 'or':", splitted)
 
             #This time the two recursions are done separately and joined in the return statement
             left = do_search(data, splitted[0], field)
             #The .join function is to treat a query with multiple 'or'
-            right = do_search(data, ' or '.join(splitted[1:]), field)
+            right = do_search(data, ' or ' .join(splitted[1:]), field)
 
-            #how = 'outer' uses the union of keys from both Dataframes. Attention: the keys are not maintained
+            #how = 'outer' uses the union of keys from both Dataframes. Attention: the keys are not mainained
             return left.merge(right, how='outer')
+            # if the first one is an 'and'
+
+        if re.search(r'(\sand\s)', query):
+
+            # splits the query in two and removes 'and'
+            splitted = query.split(' and ')
+            print("there's an 'and':",splitted)
+            # in this line there are two recursions: the data provided to the second part of the query
+            # is the one returned by the call of this function on the first part.
+            # The .join function allows the query to have multiple 'and' inside and treats them one after the other.
+            return do_search(do_search(data, splitted[0], field), ' and '.join(splitted[1:]), field)
 
 print(do_search(citations_pandas, 2, 'citing'))
 print(do_search(citations_pandas, 'hello', 'cit'))
