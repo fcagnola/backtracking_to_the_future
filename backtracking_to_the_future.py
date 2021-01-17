@@ -21,6 +21,7 @@
 
 import csv
 import pandas as pd
+import regex as re
 
 def process_citations(citations_file_path):
     data_frame = pd.read_csv(citations_file_path, dtype={'citing': str, 'cited': str, 'timespan': str},   # we're ensuring that the object of our DataFrame will be all strings
@@ -98,7 +99,7 @@ print(do_compute_impact_factor(process_citations(citations_file_path),
                                  '10.1002/ddr.21369',            # created 2016 N
                                  '10.3889/mmej.2015.50002',      # created 2015 Y
                                  '10.1016/s0140-6736(97)11096-0'},
-                                 2016))
+                                 2016))    #please provide a year in string format: "YYYY"
 
 def do_get_co_citations(data, doi1, doi2):   #doi1 and doi2 are strings identifying 2 different 'cited' article
     if doi1 == doi2:
@@ -112,20 +113,21 @@ def do_get_co_citations(data, doi1, doi2):   #doi1 and doi2 are strings identify
     else:
         return len(data_doi1_doi2) - len(data_less_duplicated_values) #detecting how many values (duplicated) have been removed
 
-def test_do_get_co_citations(data, doi1, doi2, expected):
-    result = do_get_co_citations(data, doi1, doi2)
-    if result == expected:
-        return True
-    else:
-        return False
-
 print(do_get_co_citations(process_citations(citations_file_path), "10.1177/000313481107700711", '10.1016/s0140-6736(97)11096-0' )) #no co-citations
 print(do_get_co_citations(process_citations(citations_file_path), "10.2807/1560-7917.es.2019.24.26.1900376", '10.1016/s0140-6736(97)11096-0' )) # 1 co-citation
 print(do_get_co_citations(process_citations(citations_file_path), "10.1001/archpediatrics.2009.42", '10.1001/archpediatrics.2009.42' )) # 1 co-citation
-print(test_do_get_co_citations(process_citations(citations_file_path), "10.1177/000313481107700711", '10.1016/s0140-6736(97)11096-0', "The doi1 and doi2 are never cited together by other documents")) #True
 
 def do_get_bibliographic_coupling(data, doi1, doi2):
-    pass
+    if doi1 == doi2:
+        return 'Please change one of the DOIs inserted'
+    data_doi1_doi2 = data[["citing", "cited"]].loc[data['citing'].isin([doi1, doi2])]  # a Dataframe (with 2 columns) cointaining only the rows with doi1 and doi2 in 'cited' column
+    # if a 'citing' document is repeat twice that means it cites both doi1 and doi2 articles (which are the only taken into account by the 'data_doi1_doi2' DataFrame
+    data_less_duplicated_values = data_doi1_doi2.drop_duplicates(subset=['cited'])  # 'drop_duplicate' removes duplicates on specific column(s) declared by 'subset'.
+
+    if len(data_doi1_doi2) == len(data_less_duplicated_values):  # that means that 'drop_duplicates' did not find any duplicated value, so any co-citations
+        return "The doi1 and doi2 are never cited together by other documents"
+    else:
+        return len(data_doi1_doi2) - len(data_less_duplicated_values)  # detecting how many values (duplicated) have been removed
 
 def do_get_citation_network(data, start, end):
     pass
@@ -139,5 +141,82 @@ def do_search_by_prefix(data, prefix, is_citing):
 def do_search(data, query, field):
     pass
 
-def do_filter_by_value(data, query, field):
-    pass
+def do_filter_by_value(data, query, field): # "< 2020-01" |  < 2015 and > 2012 or == 2014"  |   "not 2019 and < 2020   #2003 and not 2003-05 and 2003-06
+
+    if type(query) is not str or query == '':
+        return 'Please provide a valid string as a query'
+    if field not in data.columns:
+        return 'Please provide a valid field for the data'
+
+    # base case: if there is no 'and' or 'or'.
+    if not re.search(r'(\sand\s|\sor\s)', query):
+
+        if " " not in query:     #base-case: only a token without operators
+            return data[data[field] == query]
+
+        elif re.search(r'(\bnot\s)', query):
+            qy = query.split(' ')  # ["not", "==", "2001"]
+            if qy[1] == "==":  # "== > < != >= <=": #base case 2 "== 2001"  <operator> <token>
+                return data[~data[field] == qy[2]]
+            if qy[1] == "!=":
+                return data[~data[field] != qy[2]]
+            if qy[1] == ">":
+                return data[~data[field] > qy[2]]
+            if qy[1] == ">=":
+                return data[~data[field] >= qy[2]]
+            if qy[1] == "<=":
+                return data[~data[field] <= qy[2]]
+            if qy[1] == "<":
+                return data[~data[field] < qy[2]]
+            else:
+                return data[data[field] != qy[1]]
+        else:
+            qy = query.split(' ')  # ["==", "2001"]
+            if qy[0] == "==":  # "== > < != >= <=": #base case 2 "== 2001"  <operator> <token>
+                return data[data[field] == qy[1]]
+            if qy[0] == "!=":
+                return data[data[field] != qy[1]]
+            if qy[0] == ">":
+                return data[data[field] > qy[1]]
+            if qy[0] == ">=":
+                return data[data[field] >= qy[1]]
+            if qy[0] == "<=":
+                return data[data[field] <= qy[1]]
+            if qy[0] == "<":
+                return data[data[field] < qy[1]]
+
+
+    # recursive cases: when there are some 'and' or 'or'
+    else:
+        # we first deal with or because in python 'and' has the priority: must be dealt with last
+        # for example: True or True and False = True or (True and False) = True or False = True
+        # an example for our data: x or y and z will be dealt as [x, y and z] first, to make sure that 'y and z' will be evaluated.
+        # otherwise, it would be (x or y) and z and we don't want that   ?x or (y and z)?
+
+        if re.search(r'(\sor\s)', query):   #2004 or 2005 and 2006
+            # splits the query in two and removes the 'or'
+            splitted = query.split(' or ')
+            print("there's an 'or':", splitted)
+            # This time the two recursions are done separately and joined in the return statement
+            left = do_filter_by_value(data, splitted[0], field)   #is it a sort of divide and conquer method?
+            # The .join function is to treat a query with multiple 'or'
+            right = do_filter_by_value(data, ' or '.join(splitted[1:]), field)
+            # how = 'outer' uses the union of keys from both Dataframes. Attention: the keys are not mainained
+            return left.merge(right, how='outer')
+
+            # if the first one is an 'and'
+        if re.search(r'(\sand\s)', query):
+            # splits the query in two and removes 'and'
+            splitted = query.split(' and ')
+            print("there's an 'and':", splitted)
+            # in this line there are two recursions: the data provided to the second part of the query
+            # is the one returned by the call of this function on the first part.
+            # The .join function allows the query to have multiple 'and' inside and treats them one after the other.
+            return do_filter_by_value(do_filter_by_value(data, splitted[0], field), ' and '.join(splitted[1:]), field).reset_index()
+
+print("Doing the search for '> 2007' :\n", do_filter_by_value(process_citations(citations_file_path), '> 2007', 'creation'))
+print("Doing the search for '> 2007 and < 2009' :\n", do_filter_by_value(process_citations(citations_file_path), '> 2007 and < 2009', 'creation'))
+#print("Doing the search for '2003 not 2003-05 and 2003-06' :\n", do_filter_by_value(process_citations(citations_file_path), '2003 not 2003-05 and 2003-06', 'creation'))
+print("Doing the search for '<= 10.1007/978-3-319-93224-8_30' :\n", do_filter_by_value(process_citations(citations_file_path), '<= 10.1007/978-3-319-93224-8_30', 'citing')) #143 rows
+#print("Doing the search for '> P16Y7M and < P20Y' :\n", do_filter_by_value(process_citations(citations_file_path), '> P16Y7M and < P20Y', 'timespan'))
+print("Doing the search for '<= P1Y' :\n", do_filter_by_value(process_citations(citations_file_path), '<= P1Y', 'timespan'))
