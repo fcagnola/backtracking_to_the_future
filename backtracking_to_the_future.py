@@ -27,7 +27,7 @@ pandas.set_option('display.max_columns', 5)
 pandas.set_option('display.width', 800)
 
 
-def process_citations(citations_file_path):  # years in 'YYYY' format should be 'YYYY-01-05'
+def process_citations(citations_file_path):
     # processing through pandas' read.csv function: date parsing is necessary for easier handling of 'creation' column
     data_frame = pandas.read_csv(citations_file_path, dtype={'citing': str, 'cited': str, 'timespan': str},
                                  parse_dates=['creation'])
