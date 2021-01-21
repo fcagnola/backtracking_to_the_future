@@ -20,6 +20,9 @@
 # https://comp-think.github.io/2020-2021/slides/14%20-%20Project.html
 
 import pandas
+from networkx import DiGraph, from_pandas_edgelist, compose
+import numpy as np
+import re
 
 
 def process_citations(citations_file_path):
@@ -28,35 +31,40 @@ def process_citations(citations_file_path):
     return data_frame
 
 
-def do_compute_impact_factor(data, dois, year):  # DOIs is a set, year is 4 digit string 'YYYY'
+def do_compute_impact_factor(data, dois, year):
+
+    # Input validation: alternatively use isinstance(value, type)
     if len(dois) == 0:
         return 'Please insert a valid set of DOIs'
-    if type(year) == int:
+    if type(year) is int:
         return 'Please provide a year in string format: "YYYY"'
 
-    num = 0
-    denom = 0
+    # Filter dataframe: all rows that have one of the DOIs in the 'citing' or 'cited' column
+    dois_in_cited = data[data['cited'].isin(dois)].reset_index(drop=True)
+    dois_in_citing = data[data['citing'].isin(dois)].reset_index(drop=True)
 
-    # selecting only rows with year 'year'
-    data_year = data.loc[data['creation'].dt.year == int(year)]
+    # Create new column for creation date of the cited articles through ancillary function
+    dois_in_cited['creation_cited'] = dois_in_cited[['cited', 'creation', 'timespan']].apply(do_compute_date_column, axis=1)
 
-    # selecting only rows with previous two years: concatenate
-    data_previous_two_years = pandas.concat([data.loc[data['creation'].dt.year == (int(year) - 1)], data.loc[data['creation'].dt.year == (int(year) - 2)]])
+    # Select all rows of DOIs cited in year 'year'
+    table_num = dois_in_cited.loc[dois_in_cited['creation'].dt.year == int(year)]
+    num = len(table_num.citing.unique())
+    if num == 0:    # avoid unnecessary computations if numerator is equal to 0: return error right away
+        return ("Could not compute impact factor: no DOIs received citations in {}. \nPlease try with another input year or set".format(year))
 
-    for doi in dois:
-        # selecting rows with doi == cited and adding the length of this table to num
-        data_year_cited = data_year.loc[data_year['cited'] == doi]
-        num += len(data_year_cited)
+    # Filtering for DOIs created in the previous two years:
+    #   concatenate dataframes with (y-1 or y-2) in 'creation' or 'creation_cited' column and reset index
+    y_1_2_citing = dois_in_citing.loc[(dois_in_citing['creation'].dt.year == (int(year) - 1)) | (dois_in_citing['creation'].dt.year == (int(year) - 2))]
+    y_1_2_cited = dois_in_cited.loc[(dois_in_cited['creation_cited'] == (int(year) - 1)) | (dois_in_cited['creation_cited'] == (int(year) - 2))]
+    #   create sets of unique values for the two columns 'cited' and 'citing', and unite these sets (no duplicates)
+    denom1 = set(y_1_2_cited['cited'].unique())
+    denom2 = set(y_1_2_citing['citing'].unique())
+    denom = len(denom1.union(denom2))
+    if denom == 0:  # avoid ZeroDivisionError and handle case
+        return "Could not compute impact factor: no DOIs pointed to objects published in \nyear-1 or year-2. Please try with another input set or year."
 
-        # selecting rows with doi == citing and adding the length of this table to denom
-        data_previous_years_citing = data_previous_two_years.loc[data_previous_two_years['citing'] == doi]
-        denom += len(data_previous_years_citing)
-
-    try:
-        return round(num / denom, 2)
-    except ZeroDivisionError:
-        return "Could not compute impact factor: no DOIs pointed to objects published in \n" \
-               "year-1 or year-2. Please try with another input set or year."
+    # Return the result as a rounded numer to the 2nd decimal point
+    return round(num / denom, 2)
 
 
 def do_get_co_citations(data, doi1, doi2):
@@ -66,10 +74,45 @@ def do_get_bibliographic_coupling(data, doi1, doi2):
     pass
 
 def do_get_citation_network(data, start, end):
-    pass
+
+    # Input validation
+    if int(end) < int(start):
+        return "Invalid input: enter an end year greater than the start"
+
+    # List all years in the timewindow start->end
+    timewindow = [year for year in range(int(start), int(end)+1)]
+
+    # Filter data using 'creation' column:
+    ls_dfs = []  # list will contain one dataframe for each year in time window
+    for i in timewindow:
+        ls_dfs.append(data[data['creation'].dt.year == i])
+
+    # Concatenate all dataframes into a single df for all years in time timewindow: if empty return Error
+    d = pandas.concat(ls_dfs)
+    if len(d) == 0:
+        return "Error, could not compute graph, no documents were created in the specified timewindow \nPlease try with another start-end combination"
+
+    # Compute a 'creation_cited' column with dates for the cited DOIs, through ancillary function
+    d['creation_cited'] = d[['cited', 'creation', 'timespan']].apply(do_compute_date_column, axis=1)
+    # Remove DOIs with creation_cited != timewindow:
+    #   filter data and feed the filtered index to .drop method, inplace allows to do it directly on d
+    d.drop(d[~d['creation_cited'].isin(timewindow)].index, inplace=True)
+
+    # Create Directed Network through networkx
+    graph = from_pandas_edgelist(d, source='citing', target='cited', create_using=DiGraph)
+
+    return graph
+
 
 def do_merge_graphs(data, g1, g2):
-    pass
+
+    # input validation, as per project specifications
+    if type(g1) is not type(g2):
+        return None
+
+    # networkx' compose functions joins two graphs if they are of the same dtype
+    return compose(g1, g2)
+
 
 def do_search_by_prefix(data, prefix, is_citing):
     pass
@@ -81,6 +124,7 @@ def do_filter_by_value(data, query, field):
     pass
 
 date_dict = dict()  # this variable will store do_compute_date_column results for future use
+
 
 def do_compute_date_column(row):  # input is always pd.Series (row of a pd.DataFrame)
 
@@ -106,21 +150,23 @@ def do_compute_date_column(row):  # input is always pd.Series (row of a pd.DataF
 
         if not negative:                 # 1. Timespan is POSITIVE: compute by subtraction
             for idx, value in enumerate(ls):  # loop through elements in list 'ls' (could be YY, YY-MM or YY-MM-DD)
-                if idx == 0:                    # first elem is always year: compute year
+                if idx == 0:                    # first elem is year: compute year
                     date_column_value = date_column_value - np.timedelta64(value, 'Y')
-                elif idx == 1 and value != '':  # second elem is always month: compute month
+                elif idx == 1 and value != '':  # second elem is month: compute month
                     date_column_value = date_column_value - np.timedelta64(value, 'M')
-                elif idx == 2 and value != '':  # third elem is always day: compute day
+                elif idx == 2 and value != '':  # third elem is day: compute day
                     date_column_value = date_column_value - np.timedelta64(value, 'D')
 
         else:                            # 2. Timespan is NEGATIVE: compute by addition
             for idx, value in enumerate(ls):  # loop through elements in list 'ls' (could be YY, YY-MM or YY-MM-DD)
-                if idx == 0:                    # first elem is always year: compute year
+                if idx == 0:                    # first elem is year: compute year
                     date_column_value = date_column_value + np.timedelta64(value, 'Y')
-                elif idx == 1 and value != '':  # second elem is always month: compute month
+                elif idx == 1 and value != '':  # second elem is month: compute month
                     date_column_value = date_column_value + np.timedelta64(value, 'M')
-                elif idx == 2 and value != '':  # third elem is always day: compute day
+                elif idx == 2 and value != '':  # third elem is day: compute day
                     date_column_value = date_column_value + np.timedelta64(value, 'D')
 
         date_dict[row['cited']] = date_column_value.date().year   # store result for future use, to speed up processing
         return date_dict[row['cited']]
+    
+    
