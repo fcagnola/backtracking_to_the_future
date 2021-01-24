@@ -141,12 +141,23 @@ def do_search_by_prefix(data, prefix, is_citing):
 def do_search(data, query, field):
     pass
 
-def do_filter_by_value(data, query, field): # "< 2020-01" |  < 2015 and > 2012 or == 2014"  |   "not 2019 and < 2020   #2003 and not 2003-05 and 2003-06
+def do_filter_by_value(data, query, field): # "< 2020-01" |  < 2015 and > 2012 or == 2014"  |   "not 2019 and < 2020"   #2003 and not 2003-05 and 2003-06
 
     if type(query) is not str or query == '':
         return 'Please provide a valid string as a query'
     if field not in data.columns:
         return 'Please provide a valid field for the data'
+
+    # Le operazioni presenti nella query vanno analizzate in un base case, anche se il field è timespan
+    # Ex. in "P0Y4M and != P0Y4M2D", prima operiamo lo split con 'and' e poi facciamo i dovuti calcoli
+    # quindi dove inseriamo l'ipotesi "field= 'timespan'"?
+    if field == "timespan":
+        timespan = data['timespan']
+        timespan = timespan.strip('PD')  #remove the 'P' and the 'D' at the end
+        list_time = re.split('[YM]', timespan) #create a list in [yy, mm, dd] format
+        for idx, value in enumerate(list_time):
+            if idx == 0:   #(YY)
+                pass
 
     # base case: if there is no 'and' or 'or'.
     if not re.search(r'(\sand\s|\sor\s)', query):
@@ -157,19 +168,19 @@ def do_filter_by_value(data, query, field): # "< 2020-01" |  < 2015 and > 2012 o
         elif re.search(r'(\bnot\s)', query):
             qy = query.split(' ')  # ["not", "==", "2001"]
             if qy[1] == "==":  # "== > < != >= <=": #base case 2 "== 2001"  <operator> <token>
-                return data[~data[field] == qy[2]]
+                return data[~(data[field] == qy[2])]
             if qy[1] == "!=":
-                return data[~data[field] != qy[2]]
+                return data[~(data[field] != qy[2])]
             if qy[1] == ">":
-                return data[~data[field] > qy[2]]
+                return data[~(data[field] > qy[2])]
             if qy[1] == ">=":
-                return data[~data[field] >= qy[2]]
+                return data[~(data[field] >= qy[2])]
             if qy[1] == "<=":
-                return data[~data[field] <= qy[2]]
+                return data[~(data[field] <= qy[2])]
             if qy[1] == "<":
-                return data[~data[field] < qy[2]]
+                return data[~(data[field] < qy[2])]
             else:
-                return data[data[field] != qy[1]]
+                return data[data[field] != qy[1]]  # "not 2009"
         else:
             qy = query.split(' ')  # ["==", "2001"]
             if qy[0] == "==":  # "== > < != >= <=": #base case 2 "== 2001"  <operator> <token>
@@ -220,3 +231,5 @@ print("Doing the search for '> 2007 and < 2009' :\n", do_filter_by_value(process
 print("Doing the search for '<= 10.1007/978-3-319-93224-8_30' :\n", do_filter_by_value(process_citations(citations_file_path), '<= 10.1007/978-3-319-93224-8_30', 'citing')) #143 rows
 #print("Doing the search for '> P16Y7M and < P20Y' :\n", do_filter_by_value(process_citations(citations_file_path), '> P16Y7M and < P20Y', 'timespan'))
 print("Doing the search for '<= P1Y' :\n", do_filter_by_value(process_citations(citations_file_path), '<= P1Y', 'timespan'))
+print("Doing the search for 'not == 2007' :\n", do_filter_by_value(process_citations(citations_file_path), 'not == 2007', 'creation'))
+print("Doing the search for 'not 2007 and 2006' :\n", do_filter_by_value(process_citations(citations_file_path), 'not 2007 and 2006', 'creation'))
