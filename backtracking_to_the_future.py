@@ -67,8 +67,19 @@ def do_compute_impact_factor(data, dois, year):
     return round(num / denom, 2)
 
 
-def do_get_co_citations(data, doi1, doi2):
-    pass
+def do_get_co_citations(data, doi1, doi2):   #doi1 and doi2 are strings identifying 2 different 'cited' article
+    
+    if doi1 == doi2:
+        return 'Please change one of the DOIs inserted'
+    # DataFrame containing only the rows with doi1 and doi2 in 'cited' column
+    data_doi1_doi2 = data[["citing", "cited"]].loc[data['cited'].isin([doi1, doi2])] 
+    # if a 'citing' document is repeat twice that means it cites both doi1 and doi2 articles: we remove duplicates
+    data_less_duplicated_values = data_doi1_doi2.drop_duplicates(subset=['citing'])  
+
+    if len(data_doi1_doi2) == len(data_less_duplicated_values): # no duplicated value, no co-citation
+        return "The doi1 and doi2 are never cited together by other documents"
+    else:
+        return len(data_doi1_doi2) - len(data_less_duplicated_values) #detecting how many values (duplicated) have been removed
 
 def do_get_bibliographic_coupling(data, doi1, doi2):
     pass
