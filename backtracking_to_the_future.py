@@ -126,7 +126,27 @@ def do_merge_graphs(data, g1, g2):
 
 
 def do_search_by_prefix(data, prefix, is_citing):
-    pass
+
+    #defining the query to do using regex: the prefix is in input, only  '/' and 'any character' are added
+    query = prefix+'/.*'
+
+    #deciding on which field to do the query
+    if is_citing:
+        field = 'citing'
+    else:
+        field = 'cited'
+
+    #selection of the dataframe in input where the query matches on the field requested
+        #.str.count(query) searches for the number of matches on a Series for a query with regex
+    filtered_data = data[data[field].str.count(query) > 0]
+
+    #if the dataframe is empty: informs the user that the prefix cannot be found
+    if len(filtered_data) == 0:
+        return "The input prefix cannot be found. Please insert a new one."
+
+    else:
+        #returning the subcollection of the data as requested in input
+        return filtered_data
 
 def do_search(data, query, field):
     pass
