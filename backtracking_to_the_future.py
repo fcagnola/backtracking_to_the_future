@@ -81,8 +81,25 @@ def do_get_co_citations(data, doi1, doi2):   #doi1 and doi2 are strings identify
     else:
         return len(data_doi1_doi2) - len(data_less_duplicated_values) #detecting how many values (duplicated) have been removed
 
-def do_get_bibliographic_coupling(data, doi1, doi2):
-    pass
+def do_get_bibliographic_coupling(data, doi1,doi2):
+    #The function returns an integer defining how many times the two input DOIs cite both the same document.
+
+    if doi1 == doi2:
+        return "Please change one of the DOIs inserted."
+
+    #It returns a dataframe containing the 'citing' and 'cited' columns 
+    #of the two different DOIs stored in the variable doi1 and doi2.
+    data_doi1_doi2 = data[['citing', 'cited']].loc[data['citing'].isin([doi1,doi2])]
+
+    #This line removes one of the 'cited' DOIs, if repeated twice.
+    less_duplicate = data_doi1_doi2.drop_duplicates(subset=['cited'])
+
+    #Case of dataframe without 'cited' duplicates: the two DOIs cite different documents.
+    if len(data_doi1_doi2) == len(less_duplicate):
+        return "The doi1 and the doi2 don't cite both the same document."
+    #Case with 'cited' duplicates: it is returned how many times the two input DOIs cite both the same document.
+    else:
+        return len(data_doi1_doi2) - len(less_duplicate)
 
 def do_get_citation_network(data, start, end):
 
