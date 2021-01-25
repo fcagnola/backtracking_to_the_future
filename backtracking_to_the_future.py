@@ -149,7 +149,90 @@ def do_search_by_prefix(data, prefix, is_citing):
         return filtered_data
 
 def do_search(data, query, field):
-    pass
+
+    #preliminary verifications on the input values provided
+    if type(query) is not str or query == '':
+        return 'Please provide a valid string as a query'
+    if field not in data.columns:
+        return 'Please provide a valid field for the data'
+    if re.search(r'\snot\s', query, re.I):
+        if not re.search(r'\sand\snot\s|\sor\snot\s', query, re.I):
+            return 'Please provide an operator "and" or "or" before the "not"'
+
+    #base case: if there are no operators expcept 'not'
+    if not re.search(r'(\sand\s|\sor\s)', query):
+
+        #the search will be case insensitive
+        result = '(?i)'
+
+        # transforms the query in correct regex and escapes ambiguous characters
+        for letter in query:
+            if letter == '*':
+                result += '.*'
+            elif letter == '.':
+                result += '\.'
+            elif letter == '(':
+                result += '\('
+            elif letter == ')':
+                result += '\)'
+            else:
+                result += letter
+
+        # if the query contains 'not'
+        if re.search(r'\bnot\s', query):
+
+            #removes the word from the query, because the operation will be done in the return statement
+            result = re.sub(r'\bnot\s', r'', result)
+
+            if field == "creation":
+
+                # returns the date from DateTime to the original "yyyy-mm-dd" format
+                return data[data[field].dt.strftime("%Y-%m-%d").str.count(result)==0]
+            else:
+
+                # selects only the rows where the statement is not found in the column 'field'
+                return data[data[field].str.count(result)==0]
+
+        elif field == "creation":
+
+            # returns the date from DateTime to the original "yyyy-mm-dd" format
+            return data[data[field].dt.strftime("%Y-%m-%d").str.count(result)>0]
+
+        else:
+
+            # else selects only the rows where the query returns true on the column 'field'
+            return data[data[field].str.count(result)>0]
+
+    #recursive cases: when there are some 'and' or 'or'
+    else:
+
+        # we first deal with 'or' because in python 'and' has the priority: must be dealt with last
+        if re.search(r'(\sor\s)', query):
+
+            #splits the query in two and removes the 'or'
+            splitted = query.split(' or ')
+
+            # the two recursions are done separately and joined in the return statement
+            left = do_search(data, splitted[0], field)
+            
+            # The .join function is to treat a query with multiple 'or'. 
+            #   Without it, a statement like '2007 or 2003 or 2005' would be dealt only as '2007 or 2003'
+            right = do_search(data, ' or ' .join(splitted[1:]), field)
+
+            #how = 'outer' uses the union of keys from both Dataframes. Warning: the keys are not maintained
+            return left.merge(right, how='outer')
+            # if the first one is an 'and'
+        
+        # if there is an 'and'
+        if re.search(r'(\sand\s)', query):
+
+            # splits the query in two and removes 'and'
+            splitted = query.split(' and ')
+            
+            # in this line there are two recursions: the data provided to the second part of the query
+            # is the one returned by the call of this function on the first part.
+            # The .join function allows the query to have multiple 'and' inside and treats them one after the other.
+            return do_search(do_search(data, splitted[0], field), ' and '.join(splitted[1:]), field)
 
 def do_filter_by_value(data, query, field):  
     
