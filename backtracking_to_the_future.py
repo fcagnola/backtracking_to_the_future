@@ -318,9 +318,9 @@ def do_filter_by_value(data, query, field):
             print("there's an 'or':", splitted)
             # This time the two recursions are done separately and joined in the return statement
             left = do_filter_by_value(data, splitted[0], field)   
-            # The .join function is to treat a query with multiple 'or'
+            # The .join function is to treat a query with multiple 'or' inside and treats them one after the other.
             right = do_filter_by_value(data, ' or '.join(splitted[1:]), field)
-            # how = 'outer' uses the union of keys from both Dataframes. Attention: the keys are not maintained
+            # how = 'outer': every row from the left and right dataframes is retained in the result. 
             return left.merge(right, how='outer')
            
             # if the first one is an 'and'
