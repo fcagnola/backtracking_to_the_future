@@ -131,9 +131,83 @@ def do_search_by_prefix(data, prefix, is_citing):
 def do_search(data, query, field):
     pass
 
-def do_filter_by_value(data, query, field):
-    pass
+def do_filter_by_value(data, query, field):  
+    
+    #Input validation
+    if type(query) is not str or query == '':
+        return 'Please provide a valid string as a query'
+    if field not in data.columns:
+        return 'Please provide a valid field for the data'
+    if re.search(r'\snot\s', query, re.I):
+        if not re.search(r'\sand\snot\s|\sor\snot\s', query, re.I):
+            return 'Please provide an operator "and" or "or" before the "not"'
+   
+    #case insensitive
+    query = query.lower()
+    # we convert the "creation" column object into string dtype, consequent to the initial conversion in process_citation function
+    if field == 'creation' and data[field].dtype != object:
+        data['creation'] = data['creation'].dt.strftime("%Y-%m-%d")
+    
+    # base case: if there is no 'and' or 'or'.
+    if not re.search(r'(\sand\s|\sor\s)', query):
+        if " " not in query :                                # case: only <token> without operators
+            return data[data[field].str.lower() == query]
+        elif re.search(r'(\bnot\s)', query):                 # case: <not> <operator> <token> ; Ex.["not", "==", "2001"]
+            qy = query.split(' ')                            
+            if qy[1] == "==":                                
+                return data[~data[field].str.lower() == qy[2]]
+            if qy[1] == "!=":
+                return data[~data[field].str.lower() != qy[2]]
+            if qy[1] == ">":
+                return data[~data[field].str.lower() > qy[2]]
+            if qy[1] == ">=":
+                return data[~data[field].str.lower() >= qy[2]]
+            if qy[1] == "<=":
+                return data[~data[field].str.lower() <= qy[2]]
+            if qy[1] == "<":
+                return data[~data[field].str.lower() < qy[2]]
+            else:
+                return data[data[field].str.lower() != qy[1]]
+        else:
+            qy = query.split(' ')                            # case: <operator> <token>; Ex. ["==", "2001"]
+            if qy[0] == "==":  
+                return data[data[field].str.lower() == qy[1]]
+            if qy[0] == "!=":
+                return data[data[field].str.lower() != qy[1]]
+            if qy[0] == ">":
+                return data[data[field].str.lower() > qy[1]]
+            if qy[0] == ">=":
+                return data[data[field].str.lower() >= qy[1]]
+            if qy[0] == "<=":
+                return data[data[field].str.lower() <= qy[1]]
+            if qy[0] == "<":
+                return data[data[field].str.lower() < qy[1]]
 
+    # recursive cases: when there are some 'and' or 'or'
+    else:
+        # we first deal with or because in python 'and' has the priority: must be dealt with last. 
+        # Ex 'x or y and z' will be dealt as [x, y and z] first, to make sure that 'y and z' will be evaluated. Otherwise, it would be (x or y) and z
+        if re.search(r'(\sor\s)', query):   
+            # splits the query and removes the 'or'
+            splitted = query.split(' or ')
+            print("there's an 'or':", splitted)
+            # This time the two recursions are done separately and joined in the return statement
+            left = do_filter_by_value(data, splitted[0], field)   
+            # The .join function is to treat a query with multiple 'or'
+            right = do_filter_by_value(data, ' or '.join(splitted[1:]), field)
+            # how = 'outer' uses the union of keys from both Dataframes. Attention: the keys are not maintained
+            return left.merge(right, how='outer')
+           
+            # if the first one is an 'and'
+        if re.search(r'(\sand\s)', query):
+            # splits the query in two and removes 'and'
+            splitted = query.split(' and ')
+            print("there's an 'and':", splitted)
+            # Double recursion
+            # The .join function allows the query to have multiple 'and' inside and treats them one after the other.
+            return do_filter_by_value(do_filter_by_value(data, splitted[0], field), ' and '.join(splitted[1:]), field)
+
+        
 date_dict = dict()  # this variable will store do_compute_date_column results for future use
 
 
