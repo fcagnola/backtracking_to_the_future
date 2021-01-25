@@ -270,37 +270,43 @@ def do_filter_by_value(data, query, field):
     # base case: if there is no 'and' or 'or'.
     if not re.search(r'(\sand\s|\sor\s)', query):
         if " " not in query :                                # case: only <token> without operators
-            return data[data[field].str.lower() == query]
+            if field == "timespan":
+                query = query.upper()            
+            return data[data[field] == query]
         elif re.search(r'(\bnot\s)', query):                 # case: <not> <operator> <token> ; Ex.["not", "==", "2001"]
+            if field == "timespan":
+                query = query.upper()            
             qy = query.split(' ')                            
             if qy[1] == "==":                                
-                return data[~data[field].str.lower() == qy[2]]
+                return data[~data[field] == qy[2]]
             if qy[1] == "!=":
-                return data[~data[field].str.lower() != qy[2]]
+                return data[~data[field] != qy[2]]
             if qy[1] == ">":
-                return data[~data[field].str.lower() > qy[2]]
+                return data[~data[field] > qy[2]]
             if qy[1] == ">=":
-                return data[~data[field].str.lower() >= qy[2]]
+                return data[~data[field] >= qy[2]]
             if qy[1] == "<=":
-                return data[~data[field].str.lower() <= qy[2]]
+                return data[~data[field] <= qy[2]]
             if qy[1] == "<":
-                return data[~data[field].str.lower() < qy[2]]
+                return data[~data[field] < qy[2]]
             else:
-                return data[data[field].str.lower() != qy[1]]
+                return data[data[field] != qy[1]]
         else:
+            if field == "timespan":
+                query = query.upper()  
             qy = query.split(' ')                            # case: <operator> <token>; Ex. ["==", "2001"]
             if qy[0] == "==":  
-                return data[data[field].str.lower() == qy[1]]
+                return data[data[field] == qy[1]]
             if qy[0] == "!=":
-                return data[data[field].str.lower() != qy[1]]
+                return data[data[field] != qy[1]]
             if qy[0] == ">":
-                return data[data[field].str.lower() > qy[1]]
+                return data[data[field] > qy[1]]
             if qy[0] == ">=":
-                return data[data[field].str.lower() >= qy[1]]
+                return data[data[field] >= qy[1]]
             if qy[0] == "<=":
-                return data[data[field].str.lower() <= qy[1]]
+                return data[data[field] <= qy[1]]
             if qy[0] == "<":
-                return data[data[field].str.lower() < qy[1]]
+                return data[data[field] < qy[1]]
 
     # recursive cases: when there are some 'and' or 'or'
     else:
