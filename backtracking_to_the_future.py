@@ -185,12 +185,8 @@ def do_search(data, query, field):
         for letter in query:
             if letter == '*':
                 result += '.*'
-            elif letter == '.':
-                result += '\.'
-            elif letter == '(':
-                result += '\('
-            elif letter == ')':
-                result += '\)'
+            elif letter in '.^${}+-?()[]\|':
+                result += '\\'+letter
             else:
                 result += letter
 
