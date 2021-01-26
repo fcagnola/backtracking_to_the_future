@@ -106,20 +106,20 @@ def do_get_citation_network(data, start, end):
     if int(end) < int(start):
         return "Invalid input: enter an end year greater than the start"
 
-    # List all years in the timewindow start->end
+    # 1. List all years in the timewindow start->end
     timewindow = [year for year in range(int(start), int(end)+1)]
 
-    # Filter data using 'creation' column:
+    # 2. Filter data using 'creation' column:
     ls_dfs = []  # list will contain one dataframe for each year in time window
     for i in timewindow:
         ls_dfs.append(data[data['creation'].dt.year == i])
 
-    # Concatenate all dataframes into a single df for all years in time timewindow: if empty return Error
+    # 3. Concatenate all dataframes into a single df for all years in time timewindow: if empty return Error
     d = pandas.concat(ls_dfs)
     if len(d) == 0:
         return "Error, could not compute graph, no documents were created in the specified timewindow \nPlease try with another start-end combination"
 
-    # Compute a 'creation_cited' column with dates for the cited DOIs, through ancillary function
+    # 4. Compute a 'creation_cited' column with dates for the cited DOIs, through ancillary function
     d['creation_cited'] = d[['cited', 'creation', 'timespan']].apply(do_compute_date_column, axis=1)
     # Remove DOIs with creation_cited != timewindow:
     #   filter data and feed the filtered index to .drop method, inplace allows to do it directly on d
