@@ -27,7 +27,7 @@ def process_citations(citations_file_path):
 
 def do_compute_impact_factor(data, dois, year):
 
-    # Input validation: alternatively use isinstance(value, type)
+    # Input validation
     if len(dois) == 0:
         return 'Please insert a valid set of DOIs'
     if type(year) is int:
@@ -40,24 +40,24 @@ def do_compute_impact_factor(data, dois, year):
     # Create new column for creation date of the cited articles through ancillary function
     dois_in_cited['creation_cited'] = dois_in_cited[['cited', 'creation', 'timespan']].apply(do_compute_date_column, axis=1)
 
-    # Select all rows of DOIs cited in year 'year'
+    # Select all rows of DOIs cited in year 'YEAR'
     table_num = dois_in_cited.loc[dois_in_cited['creation'].dt.year == int(year)]
     num = len(table_num.citing.unique())
     if num == 0:    # avoid unnecessary computations if numerator is equal to 0: return error right away
         return ("Could not compute impact factor: no DOIs received citations in {}. \nPlease try with another input year or set".format(year))
 
-    # Filtering for DOIs created in the previous two years:
-    #   concatenate dataframes with (y-1 or y-2) in 'creation' or 'creation_cited' column and reset index
+    # Filter for DOIs created in the previous two years:
+    #   concatenate dataframes with (y-1 or y-2) in 'creation' or 'creation_cited' column and reset indexes
     y_1_2_citing = dois_in_citing.loc[(dois_in_citing['creation'].dt.year == (int(year) - 1)) | (dois_in_citing['creation'].dt.year == (int(year) - 2))]
     y_1_2_cited = dois_in_cited.loc[(dois_in_cited['creation_cited'] == (int(year) - 1)) | (dois_in_cited['creation_cited'] == (int(year) - 2))]
-    #   create sets of unique values for the two columns 'cited' and 'citing', and unite these sets (no duplicates)
+    #   create sets of unique values for the two columns 'cited' and 'citing', and join these sets (no duplicates)
     denom1 = set(y_1_2_cited['cited'].unique())
     denom2 = set(y_1_2_citing['citing'].unique())
     denom = len(denom1.union(denom2))
-    if denom == 0:  # avoid ZeroDivisionError and handle case
+    if denom == 0:  # avoid ZeroDivisionError
         return "Could not compute impact factor: no DOIs pointed to objects published in \nyear-1 or year-2. Please try with another input set or year."
 
-    # Return the result as a rounded numer to the 2nd decimal point
+    # Return the result as a rounded float to the 2nd decimal point
     return round(num / denom, 2)
 
 
