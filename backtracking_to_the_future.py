@@ -66,7 +66,7 @@ def do_compute_impact_factor(data, dois, year):  # DOIs is a set, year is 4 digi
     if denom == 0:  # avoid ZeroDivisionError and handle case
         return "Could not compute impact factor: no DOIs pointed to objects published in \nyear-1 or year-2. Please try with another input set or year."
 
-    # Return the result as a rounded numer to the 2nd decimal point
+    # Return the result as a rounded float to the 2nd decimal point
     return round(num / denom, 2)
 
 

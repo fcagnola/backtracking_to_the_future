@@ -22,7 +22,8 @@ import matplotlib.pyplot as plt
 # testing files: ~/Desktop/testing_csv.csv OR citations_sample.csv
 
 # create a new object of the class 'BibliometricEngine' specifying the input CSV files to process
-my_be = BibliometricEngine('citations_sample.csv')
+my_be = BibliometricEngine('~/Desktop/testing_csv.csv')
+print(my_be.data.head())
 
 # the data in the object can be accessed through the .data method specified in the __init__ function
 # print(my_be.data.head())
@@ -38,7 +39,7 @@ my_be = BibliometricEngine('citations_sample.csv')
 #     print(my_be.compute_impact_factor({'federico', 'giulia', 'ivan', 'luisa', 'constance', 'bruno'}, str(i)))
 
 # GRAPH TESTING
-# graph = my_be.get_citation_network(1990, 2020)
-# draw_networkx(graph, with_labels=False)
-# plt.show()
+graph = my_be.get_citation_network(2013, 2020)
+draw_networkx(graph, with_labels=True)
+plt.show()
 
