@@ -263,6 +263,7 @@ def do_filter_by_value(data, query, field):
    
     #case insensitive
     query = query.lower()
+   
     # we convert the "creation" column object into string dtype, consequent to the initial conversion in process_citation function
     if field == 'creation' and data[field].dtype != object:
         data['creation'] = data['creation'].dt.strftime("%Y-%m-%d")
@@ -273,9 +274,12 @@ def do_filter_by_value(data, query, field):
             if field == "timespan":
                 query = query.upper()            
             return data[data[field] == query]
+        
         elif re.search(r'(\bnot\s)', query):                 # case: <not> <operator> <token> ; Ex.["not", "==", "2001"]
+            
             if field == "timespan":
                 query = query.upper()            
+            
             qy = query.split(' ')                            
             if qy[1] == "==":                                
                 return data[~data[field] == qy[2]]
@@ -292,8 +296,10 @@ def do_filter_by_value(data, query, field):
             else:
                 return data[data[field] != qy[1]]
         else:
+            
             if field == "timespan":
                 query = query.upper()  
+            
             qy = query.split(' ')                            # case: <operator> <token>; Ex. ["==", "2001"]
             if qy[0] == "==":  
                 return data[data[field] == qy[1]]
@@ -313,21 +319,24 @@ def do_filter_by_value(data, query, field):
         # we first deal with or because in python 'and' has the priority: must be dealt with last. 
         # Ex 'x or y and z' will be dealt as [x, y and z] first, to make sure that 'y and z' will be evaluated. Otherwise, it would be (x or y) and z
         if re.search(r'(\sor\s)', query):   
-            # splits the query and removes the 'or'
+           
+        # splits the query and removes the 'or'
             splitted = query.split(' or ')
             print("there's an 'or':", splitted)
-            # This time the two recursions are done separately and joined in the return statement
+           
+        # This time the two recursions are done separately and joined in the return statement
             left = do_filter_by_value(data, splitted[0], field)   
             # The .join function is to treat a query with multiple 'or' inside and treats them one after the other.
             right = do_filter_by_value(data, ' or '.join(splitted[1:]), field)
             # how = 'outer': every row from the left and right dataframes is retained in the result. 
             return left.merge(right, how='outer')
            
-            # if the first one is an 'and'
+        # if the first one is an 'and'
         if re.search(r'(\sand\s)', query):
             # splits the query in two and removes 'and'
             splitted = query.split(' and ')
             print("there's an 'and':", splitted)
+            
             # Double recursion
             # The .join function allows the query to have multiple 'and' inside and treats them one after the other.
             return do_filter_by_value(do_filter_by_value(data, splitted[0], field), ' and '.join(splitted[1:]), field)
