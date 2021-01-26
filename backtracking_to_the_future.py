@@ -318,7 +318,6 @@ def do_filter_by_value(data, query, field):
            
         # splits the query and removes the 'or'
             splitted = query.split(' or ')
-            print("there's an 'or':", splitted)
            
         # This time the two recursions are done separately and joined in the return statement
             left = do_filter_by_value(data, splitted[0], field)   
@@ -331,7 +330,6 @@ def do_filter_by_value(data, query, field):
         if re.search(r'(\sand\s)', query):
             # splits the query in two and removes 'and'
             splitted = query.split(' and ')
-            print("there's an 'and':", splitted)
             
             # Double recursion
             # The .join function allows the query to have multiple 'and' inside and treats them one after the other.
