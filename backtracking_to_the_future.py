@@ -341,45 +341,49 @@ date_dict = dict()  # this variable will store do_compute_date_column results fo
 
 def do_compute_date_column(row):  # input is always pd.Series (row of a pd.DataFrame)
 
-    global date_dict                     # allows to use global variable inside a function
-    timespan = row['timespan']           # elem at index 'timespan' of the series is the timespan in 'P_Y_M_D' format
-    date_column_value = row['creation']  # elem at index 'creation' is the date of creation in 'YYYY-MM-DD' format
+    global date_dict
+    timespan = row['timespan']           # store timespan in 'P_Y_M_D' format
+    date_column_value = row['creation']  # store date of creation in 'YYYY-MM-DD' format
 
-    # if creation is only a year, add a few days to avoid weird calculations
+    # If creation is only a year add a few days to avoid weird calculations
     if str(date_column_value)[4:] == '-01-01 00:00:00':
         date_column_value = date_column_value + np.timedelta64('10', 'D')
 
-    if row['cited'] in date_dict:        # base case: result already computed and in global dict
+    # 1. Base case: result already computed and in global dict
+    if row['cited'] in date_dict:        
         return date_dict[row['cited']]
-
-    else:                                # computation and storage for future use in the global dict
+    
+    # 2. Compute 'creation_cited' column value for the row in input
+    else:                            
 
         negative = False                 # timespan is assumed to be positive
         if timespan[0] == "-":
-            negative = True              # if negative, the appropriate variable will show that
+            negative = True              # if negative, this variable will show that
 
         timespan = timespan.strip('PD')  # remove the 'P' at the beginning and the 'D' at the end of 'timespan'
         ls = re.split('[YM]', timespan)  # create a list in [yy, mm, dd] format for easier handling
 
-        if not negative:                 # 1. Timespan is POSITIVE: compute by subtraction
+        if not negative:                 # a. Timespan is POSITIVE: compute by subtraction
             for idx, value in enumerate(ls):  # loop through elements in list 'ls' (could be YY, YY-MM or YY-MM-DD)
-                if idx == 0:                    # first elem is year: compute year
+                if idx == 0:                    # compute year
                     date_column_value = date_column_value - np.timedelta64(value, 'Y')
-                elif idx == 1 and value != '':  # second elem is month: compute month
+                elif idx == 1 and value != '':  # compute month
                     date_column_value = date_column_value - np.timedelta64(value, 'M')
-                elif idx == 2 and value != '':  # third elem is day: compute day
+                elif idx == 2 and value != '':  # compute day
                     date_column_value = date_column_value - np.timedelta64(value, 'D')
 
-        else:                            # 2. Timespan is NEGATIVE: compute by addition
+        else:                            # b. Timespan is NEGATIVE: compute by addition
             for idx, value in enumerate(ls):  # loop through elements in list 'ls' (could be YY, YY-MM or YY-MM-DD)
-                if idx == 0:                    # first elem is year: compute year
+                if idx == 0:                    # compute year
                     date_column_value = date_column_value + np.timedelta64(value, 'Y')
-                elif idx == 1 and value != '':  # second elem is month: compute month
+                elif idx == 1 and value != '':  # compute month
                     date_column_value = date_column_value + np.timedelta64(value, 'M')
-                elif idx == 2 and value != '':  # third elem is day: compute day
+                elif idx == 2 and value != '':  # compute day
                     date_column_value = date_column_value + np.timedelta64(value, 'D')
-
-        date_dict[row['cited']] = date_column_value.date().year   # store result for future use, to speed up processing
+        
+        # 3. Store result for future use: only save year as month and day could be slightly wrong due to time handling
+        date_dict[row['cited']] = date_column_value.date().year   
+        
         return date_dict[row['cited']]
     
     
