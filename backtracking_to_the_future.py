@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2020, Silvio Peroni <essepuntato@gmail.com>
+# Copyright (c) 2021, Backtracking_to_the_future workgroup: Luisa Ammirati, Constance Dami, Giulia Menna, Federico Cagnola
 #
 # Permission to use, copy, modify, and/or distribute this software for any purpose
 # with or without fee is hereby granted, provided that the above copyright notice
@@ -12,12 +12,6 @@
 # DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS
 # ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 # SOFTWARE.
-#
-#
-# This file is just a stub of the particular module that every group should
-# implement for making its project work. In fact, all these functions returns None,
-# which is not compliant at all with the specifications that have been provided at
-# https://comp-think.github.io/2020-2021/slides/14%20-%20Project.html
 
 import pandas
 from networkx import DiGraph, from_pandas_edgelist, compose
