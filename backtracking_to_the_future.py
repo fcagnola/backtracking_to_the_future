@@ -284,7 +284,7 @@ def do_filter_by_value(data, query, field):
             if qy[1] == "<":
                 return data[~data[field] < qy[2]]
             else:
-                return data[data[field] != qy[1]]
+                return data[data[field] != qy[1]]             # case: <not> <token> 
         else:
             
             if field == "timespan":
