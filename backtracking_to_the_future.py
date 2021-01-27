@@ -169,7 +169,7 @@ def do_search(data, query, field):
         if not re.search(r'\sand\snot\s|\sor\snot\s', query, re.I):
             return 'Please provide an operator "and" or "or" before the "not"'
 
-    #base case: if there are no operators expcept 'not'
+    #base case: if there are no operators except 'not'
     if not re.search(r'(\sand\s|\sor\s)', query):
 
         #the search will be case insensitive
@@ -227,7 +227,6 @@ def do_search(data, query, field):
 
             #how = 'outer' uses the union of keys from both Dataframes. Warning: the keys are not maintained
             return left.merge(right, how='outer')
-            # if the first one is an 'and'
         
         # if there is an 'and'
         if re.search(r'(\sand\s)', query):
