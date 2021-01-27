@@ -127,11 +127,11 @@ def do_get_citation_network(data, start, end):
 
 def do_merge_graphs(data, g1, g2):
 
-    # input validation, as per project specifications
+    # Input validation
     if type(g1) is not type(g2):
         return None
 
-    # networkx' compose functions joins two graphs if they are of the same dtype
+    # Networkx' compose function joins two graphs if they are of the same dtype
     return compose(g1, g2)
 
 
